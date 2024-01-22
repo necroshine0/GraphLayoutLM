@@ -2,14 +2,31 @@
 
 ## Installation
 
+Note that **CORDv0** dataset version is used. Should be downloaded manually or as unified .zip file. 
+
+### Google Colab
+
 ```
-git clone https://github.com/Line-Kite/GraphLayoutLM
-cd GraphLayoutLM
-conda create -n graphlayoutlm python=3.7
+!pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cu118
+!pip install -q 'git+https://github.com/facebookresearch/detectron2.git'
+
+!git clone -q https://github.com/necroshine0/GraphLayoutLM
+!pip install -q -r GraphLayoutLM/requirements.txt
+
+!pip install -q gdown==v4.6.3 --no-cache-dir
+!mkdir -p GraphLayoutLM/datasets && mkdir -p GraphLayoutLM/pretrained
+
+# Base finetune
+!cd GraphLayoutLM/pretrained && gdown --no-check-certificate --folder 1F593PVKVGFIfpJyRSiMZmZywZevmlKhs --quiet
+# CORD dataset
+!cd GraphLayoutLM/datasets && gdown 1gYX_AqrKUIqJxL1EdvoSmbyQONu4c5hF --quiet && unzip -qq CORD.zip && rm CORD.zip
+```
+
+### Windows (Conda, python 3.7)
+
+```
+conda env create -f environment.yml
 conda activate graphlayoutlm
-pip install torch==1.10.0+cu111 torchvision==0.11.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
-python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.10/index.html
-pip -r requirements.txt
 ```
 
 
@@ -34,38 +51,38 @@ pip -r requirements.txt
 
 Download the model weights and move it to a new directory named "pretrained".
 
-Download the [CORD](https://huggingface.co/datasets/naver-clova-ix/cord-v2) dataset and move it to a new directory named "datasets".
+Download the [CORDv0](https://huggingface.co/datasets/naver-clova-ix/cord-v2) dataset and move it to a new directory named "datasets".
 
 #### base
 
 ```
-cd examples
-CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch --main_process_port 20655 run_cord.py \
-    --dataset_name cord \
-    --do_train \
-    --do_eval \
-    --model_name_or_path ../pretrained/graphlayoutlm-base  \
-    --output_dir ../path/cord/base/test \
-    --segment_level_layout 1 --visual_embed 1 --input_size 224 \
-    --max_steps 2000 --save_steps -1 --evaluation_strategy steps --eval_steps 100 \
-    --learning_rate 5e-5 --per_device_train_batch_size 2 --gradient_accumulation_steps 1 \
-    --dataloader_num_workers 8 --overwrite_output_dir
+!cd GraphLayoutLM/examples && python run_cord.py --dataset_name cord \
+    --do_train --do_eval \
+    --model_name_or_path ../pretrained/graphlayoutlm-base-finetuned-cord  \
+    --output_dir ../test/cord_base \
+    --max_steps 2000 --learning_rate 5e-5
+    --segment_level_layout 1 --visual_embed 1 \
+    --input_size 224  --save_steps -1 \
+    --evaluation_strategy steps --eval_steps 100 \
+    --per_device_train_batch_size 2 \
+    --gradient_accumulation_steps 1 --dataloader_num_workers 8 \
+    --overwrite_output_dir
 ```
 
 #### large
 
 ```
-cd examples
-CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch --main_process_port 20655 run_cord.py \
-    --dataset_name cord \
-    --do_train \
-    --do_eval \
-    --model_name_or_path ../pretrained/graphlayoutlm-large  \
-    --output_dir ../path/cord/large/test \
-    --segment_level_layout 1 --visual_embed 1 --input_size 224 \
-    --max_steps 4000 --save_steps -1 --evaluation_strategy steps --eval_steps 100 \
-    --learning_rate 5e-5 --per_device_train_batch_size 2 --gradient_accumulation_steps 1 \
-    --dataloader_num_workers 8 --overwrite_output_dir
+!cd GraphLayoutLM/examples && python run_cord.py --dataset_name cord \
+    --do_train --do_eval \
+    --model_name_or_path ../pretrained/graphlayoutlm-large-finetuned-cord  \
+    --output_dir ../test/cord_large \
+    --max_steps 4000 --learning_rate 5e-5 \
+    --segment_level_layout 1 --visual_embed 1 \
+    --input_size 224 --save_steps -1 \
+    --evaluation_strategy steps --eval_steps 100 \
+    --per_device_train_batch_size 2 \
+    --gradient_accumulation_steps 1 --dataloader_num_workers 8 \
+    --overwrite_output_dir
 ```
 
 

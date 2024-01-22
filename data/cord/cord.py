@@ -2,13 +2,12 @@
 Reference: https://huggingface.co/datasets/pierresi/cord/blob/main/cord.py
 '''
 
-
-import json
 import os
-from pathlib import Path
+import json
 import datasets
-from utils.image_utils import load_image, normalize_bbox
 from data.cord.graph_cord import graph_builder
+from utils.image_utils import load_image, normalize_bbox, quad_to_box
+
 logger = datasets.logging.get_logger(__name__)
 _CITATION = """\
 @article{park2019cord,
@@ -21,28 +20,6 @@ _CITATION = """\
 _DESCRIPTION = """\
 https://github.com/clovaai/cord/
 """
-
-def quad_to_box(quad):
-    # test 87 is wrongly annotated
-    box = (
-        max(0, quad["x1"]),
-        max(0, quad["y1"]),
-        quad["x3"],
-        quad["y3"]
-    )
-    if box[3] < box[1]:
-        bbox = list(box)
-        tmp = bbox[3]
-        bbox[3] = bbox[1]
-        bbox[1] = tmp
-        box = tuple(bbox)
-    if box[2] < box[0]:
-        bbox = list(box)
-        tmp = bbox[2]
-        bbox[2] = bbox[0]
-        bbox[0] = tmp
-        box = tuple(bbox)
-    return box
 
 
 class CordConfig(datasets.BuilderConfig):

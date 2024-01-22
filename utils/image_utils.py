@@ -18,6 +18,24 @@ def normalize_bbox(bbox, size):
     ]
 
 
+def quad_to_box(quad):
+    box = (
+        max(0, quad["x1"]),
+        max(0, quad["y1"]),
+        quad["x3"],
+        quad["y3"]
+    )
+    if box[3] < box[1]:
+        bbox = list(box)
+        bbox[1], bbox[3] = bbox[3], bbox[1]
+        box = tuple(bbox)
+    if box[2] < box[0]:
+        bbox = list(box)
+        bbox[0], bbox[2] = bbox[2], bbox[0]
+        box = tuple(bbox)
+    return box
+
+
 def load_image(image_path):
     image = read_image(image_path, format="BGR")
     h = image.shape[0]
