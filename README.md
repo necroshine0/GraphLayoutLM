@@ -4,7 +4,7 @@
 
 Note that **CORDv0** dataset version is used. Should be downloaded manually or as unified .zip file. 
 
-### Google Colab
+### UNIX (Google Colab, python 3.10)
 
 ```
 !pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cu118
@@ -15,11 +15,6 @@ Note that **CORDv0** dataset version is used. Should be downloaded manually or a
 
 !pip install -q gdown==v4.6.3 --no-cache-dir
 !mkdir -p GraphLayoutLM/datasets && mkdir -p GraphLayoutLM/pretrained
-
-# Base finetune
-!cd GraphLayoutLM/pretrained && gdown --no-check-certificate --folder 1F593PVKVGFIfpJyRSiMZmZywZevmlKhs --quiet
-# CORD dataset
-!cd GraphLayoutLM/datasets && gdown 1gYX_AqrKUIqJxL1EdvoSmbyQONu4c5hF --quiet && unzip -qq CORD.zip && rm CORD.zip
 ```
 
 ### Windows (Conda, python 3.7)
@@ -29,7 +24,6 @@ conda env create -f environment.yml
 conda activate graphlayoutlm
 ```
 
-
 ## Pre-trained Models
 | Model               | Model Name (Path)                                                                                              | 
 |---------------------|----------------------------------------------------------------------------------------------------------------|
@@ -37,10 +31,38 @@ conda activate graphlayoutlm
 | graphlayoutlm-large | [graphlayoutlm-large](https://drive.google.com/drive/folders/1-zM5L34quKQwfvROvlK7UJWU6HKAGAmF?usp=drive_link) |
 
 
+To download, use:
+```
+# Base pretrain
+!cd GraphLayoutLM/pretrained && gdown --no-check-certificate --folder 1KV2r4crHcGoTKM7DvEIN6BWEMEdV9tIZ --quiet
+# Large pretrain
+!cd GraphLayoutLM/pretrained && gdown --no-check-certificate --folder 1-zM5L34quKQwfvROvlK7UJWU6HKAGAmF --quiet
+```
+
+## Train on SBER presentations
+
+## SBER
+
+For base version, use:
+
+```
+!cd GraphLayoutLM/examples && python run_cord.py \
+    --dataset_name sber \
+    --do_train --do_eval \
+    --model_name_or_path ../pretrained/graphlayoutlm-base  \
+    --output_dir ../test/sber_base --cache_dir ../sber \
+    --max_steps 2000 --learning_rate 5e-5 \
+    --segment_level_layout 1 --visual_embed 1 \
+    --input_size 224 --save_steps -1 \
+    --evaluation_strategy steps --eval_steps 100 \
+    --per_device_train_batch_size 2 \
+    --gradient_accumulation_steps 1 --dataloader_num_workers 8 \
+    --overwrite_output_dir
+```
+
 ## Finetuning Examples
 
 ## CORD
-
 
   |Model on CORD                                                                                                                | precision | recall |    f1    | accuracy |
   |:---------------------------------------------------------------------------------------------------------------------------:|:---------:|:------:|:--------:|:--------:|
@@ -53,6 +75,15 @@ Download the model weights and move it to a new directory named "pretrained".
 
 Download the [CORDv0](https://huggingface.co/datasets/naver-clova-ix/cord-v2) dataset and move it to a new directory named "datasets".
 
+```
+# Base CORD finetune
+!cd GraphLayoutLM/pretrained && gdown --no-check-certificate --folder 1F593PVKVGFIfpJyRSiMZmZywZevmlKhs --quiet
+# Large CORD finetune
+!cd GraphLayoutLM/pretrained && gdown --no-check-certificate --folder 1ZZzxG2qDnkoiADovZLovIxdhwwuqJfPc --quiet
+# CORDv0 dataset
+!cd GraphLayoutLM/datasets && gdown 1gYX_AqrKUIqJxL1EdvoSmbyQONu4c5hF --quiet && unzip -qq CORD.zip && rm CORD.zip
+```
+
 #### base
 
 ```
@@ -60,9 +91,9 @@ Download the [CORDv0](https://huggingface.co/datasets/naver-clova-ix/cord-v2) da
     --do_train --do_eval \
     --model_name_or_path ../pretrained/graphlayoutlm-base-finetuned-cord  \
     --output_dir ../test/cord_base \
-    --max_steps 2000 --learning_rate 5e-5
+    --max_steps 2000 --learning_rate 5e-5 \
     --segment_level_layout 1 --visual_embed 1 \
-    --input_size 224  --save_steps -1 \
+    --input_size 224 --save_steps -1 \
     --evaluation_strategy steps --eval_steps 100 \
     --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 1 --dataloader_num_workers 8 \
