@@ -2,25 +2,39 @@ import os
 import re
 import json
 import shutil
+import argparse
 from glob import glob
 from sklearn.model_selection import train_test_split
 
 
-# FIXME: paths
-PATH_PREFIX = ""
-USE_DEV = False
-
 def main():
-    os.makedirs(f"{PATH_PREFIX}sber-slides/json", exist_ok=True)
-    os.makedirs(f"{PATH_PREFIX}sber-slides/train/image", exist_ok=True)
-    os.makedirs(f"{PATH_PREFIX}sber-slides/train/json", exist_ok=True)
-    os.makedirs(f"{PATH_PREFIX}sber-slides/test/image", exist_ok=True)
-    os.makedirs(f"{PATH_PREFIX}sber-slides/test/json", exist_ok=True)
-    if USE_DEV:
-        os.makedirs(f"{PATH_PREFIX}sber-slides/dev/image", exist_ok=True)
-        os.makedirs(f"{PATH_PREFIX}sber-slides/dev/json", exist_ok=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--path_to_datasets',
+        type=str,
+        default="GraphLayoutLM/datasets",
+    )
+    parser.add_argument(
+        '--use_dev',
+        type=bool,
+        default=True,
+    )
+    args = parser.parse_args()
+    use_dev = args.use_dev
+    sber_path = os.path.join(args.path_to_datasets, 'sber-slides')
+    if not os.path.exists(sber_path):
+        raise RuntimeError("sber-slides folder is not exists or invalid path:", sber_path)
 
-    with open(f"{PATH_PREFIX}sber-slides/result.json", 'r') as f:
+    os.makedirs(f"{sber_path}/json", exist_ok=True)
+    os.makedirs(f"{sber_path}/train/image", exist_ok=True)
+    os.makedirs(f"{sber_path}/train/json", exist_ok=True)
+    os.makedirs(f"{sber_path}/test/image", exist_ok=True)
+    os.makedirs(f"{sber_path}/test/json", exist_ok=True)
+    if use_dev:
+        os.makedirs(f"{sber_path}/dev/image", exist_ok=True)
+        os.makedirs(f"{sber_path}/dev/json", exist_ok=True)
+
+    with open(f"{sber_path}/result.json", 'r') as f:
         sber = json.load(f)
     images = sber['images']
     categories = sber['categories']
@@ -33,7 +47,7 @@ def main():
         new_file = re.sub(r'/(\w+)-', f'/{i}-', img_file)
         img['file_name'] = new_file
         try:
-            os.rename(f"sber-slides/{img_file}", f"sber-slides/{new_file}")
+            os.rename(f"{sber_path}/{img_file}", f"{sber_path}/{new_file}")
         except:
             continue
 
@@ -100,32 +114,32 @@ def main():
 
         # Saving
         file = os.path.split(img_file)[-1].replace('.png', '.json')
-        with open(f"{PATH_PREFIX}sber-slides/json/{file}", 'w') as f:
+        with open(f"{sber_path}/json/{file}", 'w') as f:
             json.dump(img_json, f)
 
 
     # Split train/test
-    files = glob(f"{PATH_PREFIX}sber-slides/json/*")
-    print(len(files))
+    files = glob(f"{sber_path}/json/*")
+    print("Dataset size:", len(files))
 
     files_train, files_test = train_test_split(files, test_size=31, random_state=10)
     files_dev = []
-    if USE_DEV:
-        files_test, files_dev = train_test_split(files, test_size=1, random_state=10)
+    if use_dev:
+        files_test, files_dev = train_test_split(files_test, test_size=1, random_state=10)
     sets_dict = {"train": files_train, "dev": files_dev, "test": files_test}
+    print(f"train/dev/test: {len(files_train)}/{len(files_dev)}/{len(files_test)}")
 
     for set in sets_dict:
         base_files = sets_dict[set]
         for file in base_files:
-            try:
-                os.rename(file, file.replace('sber-slides/json', f'sber-slides/{set}/json'))
-                img_name = os.path.split(file)[-1].replace('.json', '.png')
-                os.rename(f'sber-slides/images/{img_name}', f'sber-slides/{set}/image/{img_name}')
-            except:
-                continue
+            new_file = file.replace('/json', f'/{set}/json')
+            img_name = os.path.split(file)[-1].replace('.json', '.png')
+
+            os.rename(file, new_file)
+            os.rename(f"{sber_path}/images/{img_name}", f"{sber_path}/{set}/image/{img_name}")
 
     for set in ['train', 'dev', 'test']:
-        for file in glob(f"{PATH_PREFIX}sber-slides/{set}/json/*.json"):
+        for file in glob(f"{sber_path}/{set}/json/*.json"):
             f = open(file)
             data = json.load(f)
             data['meta']['split'] = set
@@ -133,17 +147,17 @@ def main():
                 json.dump(data, f)
 
     # Drop invalid files
-    invalid = list(map(lambda x: os.path.split(x)[-1], glob(f"{PATH_PREFIX}sber-slides/images/*")))
+    invalid = list(map(lambda x: os.path.split(x)[-1], glob(f"{sber_path}/images/*")))
     if len(invalid) > 0:
         print('Invalid files remained:')
         print(invalid)
 
-    shutil.rmtree(f"{PATH_PREFIX}sber-slides/images")
-    shutil.rmtree(f"{PATH_PREFIX}sber-slides/json")
+    shutil.rmtree(f"{sber_path}/images")
+    shutil.rmtree(f"{sber_path}/json")
 
-    train_images = glob(f"{PATH_PREFIX}sber-slides/train/image/*.png")
-    dev_images = glob(f"{PATH_PREFIX}sber-slides/dev/image/*.png")
-    test_images = glob(f"{PATH_PREFIX}sber-slides/test/image/*.png")
+    train_images = glob(f"{sber_path}/train/image/*.png")
+    dev_images = glob(f"{sber_path}/dev/image/*.png")
+    test_images = glob(f"{sber_path}/test/image/*.png")
 
     get_file = lambda x: os.path.split(x)[-1]
     train_images = list(map(get_file, train_images))
@@ -164,9 +178,10 @@ def main():
 
     # Save images and categories data
     meta = {"images": images, "categories": categories}
-    with open(f'sber-slides/meta.json', 'w') as f:
+    with open(f"{sber_path}/meta.json", 'w') as f:
         json.dump(meta, f)
 
 
 if __name__ == "__main__":
     main()
+

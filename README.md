@@ -41,8 +41,6 @@ To download, use:
 
 ## Train on SBER presentations
 
-## SBER
-
 For base version, use:
 
 ```
