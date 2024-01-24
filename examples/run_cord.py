@@ -1,17 +1,16 @@
 # Refer to code of layoutlmv3
 #!/usr/bin/env python
 # coding=utf-8
-import logging
+
 import os
 import sys
-from dataclasses import dataclass, field
 from typing import Optional
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
 
 import transformers
-
 from transformers import (
     HfArgumentParser,
     PreTrainedTokenizerFast,
@@ -22,23 +21,18 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 
-# Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-# check_min_version("4.5.0")
-
+import logging
 logger = logging.getLogger(__name__)
-
-from timm.data.constants import \
-    IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
-from torchvision import transforms
-import torch
 
 sys.path.append("..") 
 
 from data.data_collator import DataCollatorForKeyValueExtraction
+from data.cord.dataset_builder import build_datasets
 
-from utils.image_utils import RandomResizedCropAndInterpolationWithTwoPic, pil_loader, Compose
-from utils.graph_utils import set_nodes, set_edges
 
+from model.configuration_graphlayoutlm import GraphLayoutLMConfig
+from model.graphlayoutlm import GraphLayoutLMForTokenClassification
+from model.tokenization_graphlayoutlm_fast import GraphLayoutLMTokenizerFast
 
 
 @dataclass
@@ -184,9 +178,9 @@ def main():
 
     # Setup logging
     logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
+        format = "%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        datefmt = "%m/%d/%Y %H:%M:%S",
+        handlers = [logging.StreamHandler(sys.stdout)],
     )
     logger.setLevel(logging.INFO if is_main_process(training_args.local_rank) else logging.WARN)
 
@@ -205,80 +199,16 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    if data_args.dataset_name == 'cord':
-        import data.cord.cord
-        datasets = load_dataset(os.path.abspath(data.cord.cord.__file__), cache_dir=model_args.cache_dir)
-    elif 'sber' in data_args.dataset_name:
-        import data.cord.sber
-        datasets = load_dataset(os.path.abspath(data.cord.sber.__file__), cache_dir=model_args.cache_dir)
-    else:
-        raise NotImplementedError()
-
-    if training_args.do_train:
-        column_names = datasets["train"].column_names
-        features = datasets["train"].features
-    else:
-        column_names = datasets["test"].column_names
-        features = datasets["test"].features
-
-    text_column_name = "words" if "words" in column_names else "tokens"
-
-    label_column_name = (
-        f"{data_args.task_name}_tags" if f"{data_args.task_name}_tags" in column_names else column_names[1]
-    )
-
-    remove_columns = column_names
-
-    # In the event the labels are not a `Sequence[ClassLabel]`, we will need to go through the dataset to get the
-    # unique labels.
-    def get_label_list(labels):
-        unique_labels = set()
-        for label in labels:
-            unique_labels = unique_labels | set(label)
-        label_list = list(unique_labels)
-        label_list.sort()
-        return label_list
-
-    if isinstance(features[label_column_name].feature, ClassLabel):
-        label_list = features[label_column_name].feature.names
-        # No need to convert the labels since they are already ints.
-        label_to_id = {i: i for i in range(len(label_list))}
-    else:
-        label_list = get_label_list(datasets["train"][label_column_name])
-        label_to_id = {l: i for i, l in enumerate(label_list)}
-    num_labels = len(label_list)
-
-    # Load pretrained model and tokenizer
-    #
+    # Load pretrained tokenizer
     # Distributed training:
     # The .from_pretrained methods guarantee that only one local process can concurrently
-    # download model & vocab.
-    from model.configuration_graphlayoutlm import GraphLayoutLMConfig
-    config = GraphLayoutLMConfig.from_pretrained(
-        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
-        num_labels=num_labels,
-        finetuning_task=data_args.task_name,
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        input_size=data_args.input_size,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
-    from model.tokenization_graphlayoutlm_fast import GraphLayoutLMTokenizerFast
+    # download vocab
     tokenizer = GraphLayoutLMTokenizerFast.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         tokenizer_file=None,  # avoid loading from a cached file of the pre-trained model in another machine
         cache_dir=model_args.cache_dir,
         use_fast=True,
         add_prefix_space=True,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
-    from model.graphlayoutlm import GraphLayoutLMForTokenClassification
-    model=GraphLayoutLMForTokenClassification.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
@@ -291,158 +221,35 @@ def main():
             "requirement"
         )
 
-    # Preprocessing the dataset
     # Padding strategy
     padding = "max_length" if data_args.pad_to_max_length else False
 
-    if data_args.visual_embed:
-        imagenet_default_mean_and_std = data_args.imagenet_default_mean_and_std
-        mean = IMAGENET_INCEPTION_MEAN if not imagenet_default_mean_and_std else IMAGENET_DEFAULT_MEAN
-        std = IMAGENET_INCEPTION_STD if not imagenet_default_mean_and_std else IMAGENET_DEFAULT_STD
-        common_transform = Compose([
-            # transforms.ColorJitter(0.4, 0.4, 0.4),
-            # transforms.RandomHorizontalFlip(p=0.5),
-            RandomResizedCropAndInterpolationWithTwoPic(
-                size=data_args.input_size, interpolation=data_args.train_interpolation),
-        ])
+    # Preprocessing the dataset
+    datasets, label_list = build_datasets(tokenizer, data_args, model_args, training_args)
+    train_dataset = datasets['train']
+    test_dataset = datasets['test']
+    eval_dataset = datasets['test']  # if 'eval' not in datasets else datasets['eval']
+    num_labels = len(label_list)
 
-        patch_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=torch.tensor(mean),
-                std=torch.tensor(std))
-        ])
+    # Load pretrained model
+    config = GraphLayoutLMConfig.from_pretrained(
+        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
+        num_labels=num_labels,
+        finetuning_task=data_args.task_name,
+        cache_dir=model_args.cache_dir,
+        revision=model_args.model_revision,
+        input_size=data_args.input_size,
+        use_auth_token=True if model_args.use_auth_token else None,
+    )
 
-    # Tokenize all texts and align the labels with them.
-    def tokenize_and_align_labels(examples, augmentation=False):
-        tokenized_inputs = tokenizer(
-            examples[text_column_name],boxes=examples["bboxes"],word_labels=examples["ner_tags"],
-            padding=False,
-            truncation=True,
-            return_overflowing_tokens=True,
-        )
-        
-
-        labels, bboxes, images, image_paths, nodes, edges = [], [], [], [], [], []
-        for batch_index in range(len(tokenized_inputs["input_ids"])):
-            word_ids = tokenized_inputs.word_ids(batch_index=batch_index)
-            org_batch_index = tokenized_inputs["overflow_to_sample_mapping"][batch_index]
-
-            label = examples[label_column_name][org_batch_index]
-            bbox = examples["bboxes"][org_batch_index]
-
-            node_ids=examples["node_ids"][org_batch_index]
-
-            previous_word_idx = None
-            label_ids = []
-            bbox_inputs = []
-            new_node_ids=[]
-            for word_idx in word_ids:
-                # Special tokens have a word id that is None. We set the label to -100 so they are automatically
-                # ignored in the loss function.
-                if word_idx is None:
-                    label_ids.append(-100)
-                    bbox_inputs.append([0, 0, 0, 0])
-                    new_node_ids.append(-1)
-                # We set the label for the first token of each word.
-                elif word_idx != previous_word_idx:
-                    label_ids.append(label_to_id[label[word_idx]])
-                    bbox_inputs.append(bbox[word_idx])
-                    new_node_ids.append(node_ids[word_idx])
-                # For the other tokens in a word, we set the label to either the current label or -100, depending on
-                # the label_all_tokens flag.
-                else:
-                    label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else -100)
-                    bbox_inputs.append(bbox[word_idx])
-                    new_node_ids.append(node_ids[word_idx])
-                previous_word_idx = word_idx
-            labels.append(label_ids)
-            bboxes.append(bbox_inputs)
-
-            if data_args.visual_embed:
-                ipath = examples["image_path"][org_batch_index]
-                img = pil_loader(ipath)
-                for_patches, _ = common_transform(img, augmentation=augmentation)
-                patch = patch_transform(for_patches)
-                images.append(patch)
-                image_paths.append(ipath)
-
-            new_node_data,new_ids=set_nodes(new_node_ids)
-
-            new_edges_data=set_edges(examples["edges"][org_batch_index],new_ids)
-            nodes.append(new_node_data)
-            edges.append(new_edges_data)
-
-        # build graph mask
-        graph_mask_list=[]
-        input_len=709
-        for nodes_data,edges_data in zip(nodes,edges):
-            edges_len=len(edges_data)
-            graph_mask= -9e15 * np.ones((input_len,input_len))
-            for edge_i in range(edges_len):
-                edge=edges_data[edge_i]
-                if edge[0]==-1:
-                    break
-                a_node_index,b_node_index=edge[0],edge[1]
-                [a_start,a_end]=nodes_data[a_node_index]
-                [b_start,b_end]=nodes_data[b_node_index]
-                graph_mask[a_start:a_end+1,b_start:b_end+1]=0
-            graph_mask_list.append(graph_mask)
-        tokenized_inputs["graph_mask"]=graph_mask_list
-
-
-        tokenized_inputs["labels"] = labels
-        tokenized_inputs["bbox"] = bboxes
-        if data_args.visual_embed:
-            tokenized_inputs["images"] = images
-            tokenized_inputs["image_path"] = image_paths
-        return tokenized_inputs
-
-    if training_args.do_train:
-        if "train" not in datasets:
-            raise ValueError("--do_train requires a train dataset")
-        train_dataset = datasets["train"]
-        if data_args.max_train_samples is not None:
-            train_dataset = train_dataset.select(range(data_args.max_train_samples))
-
-
-        train_dataset = train_dataset.map(
-            tokenize_and_align_labels,
-            batched=True,
-            remove_columns=remove_columns,
-            num_proc=data_args.preprocessing_num_workers,
-            load_from_cache_file=not data_args.overwrite_cache,
-        )
-
-
-    if training_args.do_eval:
-        validation_name = "test"
-        if validation_name not in datasets:
-            raise ValueError("--do_eval requires a validation dataset")
-        eval_dataset = datasets[validation_name]
-        if data_args.max_val_samples is not None:
-            eval_dataset = eval_dataset.select(range(data_args.max_val_samples))
-        eval_dataset = eval_dataset.map(
-            tokenize_and_align_labels,
-            batched=True,
-            remove_columns=remove_columns,
-            num_proc=data_args.preprocessing_num_workers,
-            load_from_cache_file=not data_args.overwrite_cache,
-        )
-
-    if training_args.do_predict:
-        if "test" not in datasets:
-            raise ValueError("--do_predict requires a test dataset")
-        test_dataset = datasets["test"]
-        if data_args.max_test_samples is not None:
-            test_dataset = test_dataset.select(range(data_args.max_test_samples))
-        test_dataset = test_dataset.map(
-            tokenize_and_align_labels,
-            batched=True,
-            remove_columns=remove_columns,
-            num_proc=data_args.preprocessing_num_workers,
-            load_from_cache_file=not data_args.overwrite_cache,
-        )
+    model = GraphLayoutLMForTokenClassification.from_pretrained(
+        model_args.model_name_or_path,
+        from_tf=bool(".ckpt" in model_args.model_name_or_path),
+        config=config,
+        cache_dir=model_args.cache_dir,
+        revision=model_args.model_revision,
+        use_auth_token=True if model_args.use_auth_token else None,
+    )
 
     # Data collator
     data_collator = DataCollatorForKeyValueExtraction(
