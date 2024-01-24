@@ -151,7 +151,6 @@ class DataTrainingArguments:
     imagenet_default_mean_and_std: bool = field(default=False, metadata={"help": ""})
 
 
-
 def main():
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
