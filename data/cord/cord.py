@@ -5,7 +5,7 @@ Reference: https://huggingface.co/datasets/pierresi/cord/blob/main/cord.py
 import os
 import json
 import datasets
-from .base_dataset import BaseDataset
+from data.cord.base_dataset import BaseDataset
 from utils.image_utils import load_image, normalize_bbox, quad_to_box
 
 logger = datasets.logging.get_logger(__name__)
@@ -32,7 +32,7 @@ class CordConfig(datasets.BuilderConfig):
         super(CordConfig, self).__init__(**kwargs)
 
 
-class Cord(BaseDataset):
+class CordDataset(BaseDataset):
     BUILDER_CONFIGS = [
         CordConfig(name="cord", version=datasets.Version("1.0.0"), description="CORD dataset"),
     ]

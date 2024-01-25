@@ -4,6 +4,7 @@
 
 import os
 import sys
+import logging
 from typing import Optional
 from dataclasses import dataclass, field
 
@@ -21,10 +22,11 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 
-import logging
+sys.path.append("..")
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
 logger = logging.getLogger(__name__)
 
-sys.path.append("..") 
 
 from data.data_collator import DataCollatorForKeyValueExtraction
 from data.cord.dataset_builder import build_datasets

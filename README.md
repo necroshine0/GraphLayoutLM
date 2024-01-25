@@ -4,7 +4,7 @@
 
 Note that **CORDv0** dataset version is used. Should be downloaded manually or as unified .zip file. 
 
-### UNIX (Google Colab, python 3.10)
+**UNIX (Google Colab, python 3.10)**
 
 ```
 !pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cu118
@@ -17,12 +17,14 @@ Note that **CORDv0** dataset version is used. Should be downloaded manually or a
 !mkdir -p GraphLayoutLM/datasets && mkdir -p GraphLayoutLM/pretrained
 ```
 
-### Windows (Conda, python 3.7)
+**Windows (Conda, python 3.9)**
 
 ```
-conda env create -f environment.yml
+conda env create -f GraphLayoutLM/environment.yml --yes
 conda activate graphlayoutlm
 ```
+
+You can intall package by using `pip install -e GraphLayoutLM`, and then use `import GraphLayoutLM`.
 
 ## Pre-trained Models
 | Model               | Model Name (Path)                                                                                              | 
