@@ -9,16 +9,20 @@ import torch
 from detectron2.data.detection_utils import read_image
 from detectron2.data.transforms import ResizeTransform, TransformList
 
-def normalize_bbox(bbox, size):
-    return [
-        int(1000 * bbox[0] / size[0]),
-        int(1000 * bbox[1] / size[1]),
-        int(1000 * bbox[2] / size[0]),
-        int(1000 * bbox[3] / size[1]),
+def normalize_bbox(bbox, size, use_int=True):
+    norm_bbox = [
+        1000 * bbox[0] / size[0],
+        1000 * bbox[1] / size[1],
+        1000 * bbox[2] / size[0],
+        1000 * bbox[3] / size[1],
     ]
 
+    if use_int:
+        norm_bbox = list(map(int, norm_bbox))
+    return norm_bbox
 
-def quad_to_box(quad):
+
+def quad_to_box(quad, use_int=True):
     box = (
         max(0, quad["x1"]),
         max(0, quad["y1"]),
@@ -33,6 +37,9 @@ def quad_to_box(quad):
         bbox = list(box)
         bbox[0], bbox[2] = bbox[2], bbox[0]
         box = tuple(bbox)
+
+    if use_int:
+        box = tuple(map(int, box))
     return box
 
 
@@ -57,7 +64,6 @@ def crop(image, i, j, h, w, boxes=None):
         cropped_boxes = torch.min(cropped_boxes.reshape(-1, 2, 2), max_size)
         cropped_boxes = cropped_boxes.clamp(min=0)
         boxes = cropped_boxes.reshape(-1, 4)
-
     return cropped_image, boxes
 
 
@@ -74,7 +80,6 @@ def resize(image, size, interpolation, boxes=None):
 
     # boxes = boxes.copy()
     scaled_boxes = boxes * torch.as_tensor([ratio_width, ratio_height, ratio_width, ratio_height])
-
     return rescaled_image, scaled_boxes
 
 
@@ -97,17 +102,11 @@ def get_bb(bb, page_size):
         clamp(max(xs), 0, width - 1),
         clamp(max(ys), 0, height - 1),
     ]
-    return_bb = [
-            int(1000 * return_bb[0] / width),
-            int(1000 * return_bb[1] / height),
-            int(1000 * return_bb[2] / width),
-            int(1000 * return_bb[3] / height),
-        ]
+    return_bb = normalize_bbox(return_bb, (width, height))
     return return_bb
 
 
 class ToNumpy:
-
     def __call__(self, pil_img):
         np_img = np.array(pil_img, dtype=np.uint8)
         if np_img.ndim < 3:
@@ -117,7 +116,6 @@ class ToNumpy:
 
 
 class ToTensor:
-
     def __init__(self, dtype=torch.float32):
         self.dtype = dtype
 
@@ -176,9 +174,7 @@ class Compose:
 
         Make sure to use only scriptable transformations, i.e. that work with ``torch.Tensor``, does not require
         `lambda` functions or ``PIL.Image``.
-
     """
-
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -200,7 +196,6 @@ class RandomResizedCropAndInterpolationWithTwoPic:
         ratio: range of aspect ratio of the origin aspect ratio cropped
         interpolation: Default: PIL.Image.BILINEAR
     """
-
     def __init__(self, size, second_size=None, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.),
                  interpolation='bilinear', second_interpolation='lanczos'):
         if isinstance(size, tuple):

@@ -35,10 +35,12 @@ def get_transforms(data_args):
 def build_datasets(tokenizer, data_args, model_args, training_args):
     if data_args.dataset_name == 'cord':
         import data.cord.cord
-        datasets = load_dataset(os.path.abspath(data.cord.cord.__file__), cache_dir=model_args.cache_dir)
+        print("PATH:", os.path.abspath(data.cord.cord.__file__))
+        datasets = load_dataset(os.path.abspath(data.cord.cord.__file__), trust_remote_code=True, cache_dir=model_args.cache_dir)
     elif 'sber' in data_args.dataset_name:
         import data.cord.sber
-        datasets = load_dataset(os.path.abspath(data.cord.sber.__file__), cache_dir=model_args.cache_dir)
+        print("PATH:", os.path.abspath(data.cord.sber.__file__))
+        datasets = load_dataset(os.path.abspath(data.cord.sber.__file__), trust_remote_code=True, cache_dir=model_args.cache_dir)
     else:
         raise NotImplementedError()
 

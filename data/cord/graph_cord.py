@@ -3,6 +3,7 @@ import sys
 
 sys.path.append("..") 
 
+from utils.image_utils import quad_to_box
 from utils.graph_builder_uitls import OPPOSITE, TreeNode, json_loader, json_saver, node_box_update, posotion_judge
 
 
@@ -21,28 +22,6 @@ def get_line_bbox(bboxs):
     assert x1 >= x0 and y1 >= y0
     bbox = [x0, y0, x1, y1]
     return bbox
-
-
-def quad_to_box(quad):
-    box = (
-        max(0, quad["x1"]),
-        max(0, quad["y1"]),
-        quad["x3"],
-        quad["y3"]
-    )
-    if box[3] < box[1]:
-        bbox = list(box)
-        tmp = bbox[3]
-        bbox[3] = bbox[1]
-        bbox[1] = tmp
-        box = tuple(bbox)
-    if box[2] < box[0]:
-        bbox = list(box)
-        tmp = bbox[2]
-        bbox[2] = bbox[0]
-        bbox[0] = tmp
-        box = tuple(bbox)
-    return box
 
 
 def data_preprocess(data):

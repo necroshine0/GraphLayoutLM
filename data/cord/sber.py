@@ -1,7 +1,7 @@
 import os
 import json
 import datasets
-from data.cord.graph_cord import graph_builder
+from .base_dataset import BaseDataset
 from utils.image_utils import load_image, normalize_bbox, quad_to_box
 
 logger = datasets.logging.get_logger(__name__)
@@ -17,77 +17,28 @@ class SberConfig(datasets.BuilderConfig):
         super(SberConfig, self).__init__(**kwargs)
 
 
-class Sber(datasets.GeneratorBasedBuilder):
+class Sber(BaseDataset):
     BUILDER_CONFIGS = [
         SberConfig(name="sber-slides", version=datasets.Version("1.0.0"), description="SBER dataset"),
     ]
 
-    def _info(self):
-        return datasets.DatasetInfo(
-            features=datasets.Features(
-                {
-                    "id":       datasets.Value("string"),
-                    "words":    datasets.Sequence(datasets.Value("string")),
-                    "bboxes":   datasets.Sequence(datasets.Sequence(datasets.Value("int64"))),
-                    "node_ids": datasets.Sequence(datasets.Value("int64")),
-                    "edges":    datasets.Sequence(
-                        {   
-                            "head": datasets.Value("int64"),
-                            "tail": datasets.Value("int64"),
-                            "rel":  datasets.Value("string"),
-                        }
-                    ),
-                    "ner_tags":  datasets.Sequence(
-                        datasets.features.ClassLabel(
-                            names=[
-                                "type: focus",
-                                "type: label",
-                                "type: list, flavour: bul_list",
-                                "type: list, flavour: enum_list",
-                                "type: pic",
-                                "type: pic, flavour: icon",
-                                "type: plot",
-                                "type: subtitle",
-                                "type: table, flavour: mesh",
-                                "type: table, flavour: mesh, subelement: cell",
-                                "type: table, flavour: regular_table",
-                                "type: text",
-                                "type: timeline",
-                                "type: title",
-                            ]
-                        )
-                    ),
-                    "image":      datasets.Array3D(shape=(3, 224, 224), dtype="uint8"),
-                    "image_path": datasets.Value("string"),
-                }
-            ),
-            supervised_keys=None,
-        )
-
-    def _split_generators(self, dl_manager):
-        """Returns SplitGenerators. Uses local files located with data_dir"""
-        dest = r"../datasets/sber-slides"
-        if not os.path.exists(os.path.join(dest, "train", "graph")):
-            graph_builder(dest)
-        return [
-            datasets.SplitGenerator(
-                name=datasets.Split.TRAIN, gen_kwargs={"filepath": dest + "/train"}
-            ),
-            # datasets.SplitGenerator(
-            #     name=datasets.Split.VALIDATION, gen_kwargs={"filepath": dest + "/dev"}
-            # ),
-            datasets.SplitGenerator(
-                name=datasets.Split.TEST, gen_kwargs={"filepath": dest + "/test"}
-            ),
-        ]
-
-    def get_line_bbox(self, bboxs):
-        x = [bboxs[i][j] for i in range(len(bboxs)) for j in range(0, len(bboxs[i]), 2)]
-        y = [bboxs[i][j] for i in range(len(bboxs)) for j in range(1, len(bboxs[i]), 2)]
-        x0, y0, x1, y1 = min(x), min(y), max(x), max(y)
-        assert x1 >= x0 and y1 >= y0
-        bbox = [[x0, y0, x1, y1] for _ in range(len(bboxs))]
-        return bbox
+    ds_name = "sber-slides"
+    tags_names = [
+        "type: focus",
+        "type: label",
+        "type: list, flavour: bul_list",
+        "type: list, flavour: enum_list",
+        "type: pic",
+        "type: pic, flavour: icon",
+        "type: plot",
+        "type: subtitle",
+        "type: table, flavour: mesh",
+        "type: table, flavour: mesh, subelement: cell",
+        "type: table, flavour: regular_table",
+        "type: text",
+        "type: timeline",
+        "type: title",
+    ]
 
     def _generate_examples(self, filepath):
         logger.info("⏳ Generating examples from = %s", filepath)
