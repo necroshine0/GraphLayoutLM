@@ -2,8 +2,6 @@
 
 ## Installation
 
-Note that **CORDv0** dataset version is used. Should be downloaded manually or as unified .zip file. 
-
 **UNIX (Google Colab, python 3.10)**
 
 ```
@@ -74,6 +72,8 @@ For base version, use:
 Download the model weights and move it to a new directory named "pretrained".
 
 Download the [CORDv0](https://huggingface.co/datasets/naver-clova-ix/cord-v2) dataset and move it to a new directory named "datasets".
+
+Note that **CORDv0** dataset version is used. Should be downloaded manually or as unified .zip file.
 
 ```
 # Base CORD finetune

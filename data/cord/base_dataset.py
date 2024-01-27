@@ -1,7 +1,6 @@
 '''
 Reference: https://huggingface.co/datasets/pierresi/cord/blob/main/cord.py
 '''
-
 import os
 import datasets
 from data.cord.graph_cord import graph_builder
@@ -21,6 +20,7 @@ def get_dataset_folder(ds_name):
 class BaseDataset(datasets.GeneratorBasedBuilder):
     ds_name = "base"
     tags_names = []
+    label_2_id = {tags_names[i]: i for i in range(len(tags_names))}
 
     citation = ""
     desctiption = ""
@@ -69,7 +69,6 @@ class BaseDataset(datasets.GeneratorBasedBuilder):
         if not os.path.exists(os.path.join(dest, "train", "graph")):
             print(f"Building graph in {dest}...")
             graph_builder(dest)
-            print("Done!")
 
     def _split_generators(self, dl_manager):
         """Returns SplitGenerators. Uses local files located with data_dir"""

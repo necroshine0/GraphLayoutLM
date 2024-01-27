@@ -6,6 +6,7 @@ import os
 import sys
 import logging
 from typing import Optional
+from argparse import Namespace
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -29,8 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 from data.data_collator import DataCollatorForKeyValueExtraction
-from data.cord.dataset_builder import build_datasets
-
+from data.dataset_processor import process_dataset, load_dataset_from_name
 
 from model.configuration_graphlayoutlm import GraphLayoutLMConfig
 from model.graphlayoutlm import GraphLayoutLMForTokenClassification
@@ -161,6 +161,7 @@ def main():
         model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    full_args = Namespace(**vars(data_args), **vars(model_args), **vars(training_args))
 
     # Detecting last checkpoint.
     last_checkpoint = None
@@ -226,7 +227,8 @@ def main():
     padding = "max_length" if data_args.pad_to_max_length else False
 
     # Preprocessing the dataset
-    datasets, label_list = build_datasets(tokenizer, data_args, model_args, training_args)
+    datasets, label_list = load_dataset_from_name(data_args.dataset_name)
+    datasets = process_dataset(datasets, label_list, tokenizer, full_args)
     train_dataset = datasets['train']
     test_dataset = datasets['test']
     eval_dataset = datasets['test']  # if 'eval' not in datasets else datasets['eval']
