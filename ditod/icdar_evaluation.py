@@ -6,12 +6,12 @@ import shutil
 from collections import OrderedDict
 from xml.dom.minidom import Document
 
-import detectron2.utils.comm as comm
 import torch
+import detectron2.utils.comm as comm
 from detectron2.evaluation import COCOEvaluator
 from detectron2.utils.file_io import PathManager
 
-from .table_evaluation.evaluate import calc_table_score
+from .table_evaluation import calc_table_score
 
 
 class ICDAREvaluator(COCOEvaluator):

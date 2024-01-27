@@ -20,6 +20,7 @@ from .deit import deit_base_patch16, mae_base_patch16
 from GraphLayoutLM.model.graphlayoutlm import GraphLayoutLM
 
 from transformers import AutoConfig
+from GraphLayoutLM.model import GraphLayoutLMConfig
 
 __all__ = ["build_vit_fpn_backbone",]
 
@@ -71,8 +72,12 @@ class VIT_Backbone(Backbone):
                                            **model_kwargs)
             else:
                 raise ValueError()
-        elif "layoutlmv" in name:
-            config = AutoConfig.from_pretrained(config_path)
+        elif "layoutlm" in name:
+            print(config_path)
+            if "graph" in name:
+                config = GraphLayoutLMConfig.from_pretrained(config_path)
+            else:
+                config = AutoConfig.from_pretrained(config_path)
             # disable relative bias as DiT
             config.has_spatial_attention_bias = False
             config.has_relative_attention_bias = False

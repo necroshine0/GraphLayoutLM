@@ -4,7 +4,7 @@ MODEL:
   META_ARCHITECTURE: "VLGeneralizedRCNN"
   PIXEL_MEAN: [ 127.5, 127.5, 127.5 ]
   PIXEL_STD: [ 127.5, 127.5, 127.5 ]
-  WEIGHTS: "/sber_base/ViT/pytorch_model.bin"
+  WEIGHTS: "GraphLayoutLM/pretrained/graphlayoutlm-base/pytorch_model.bin"
   BACKBONE:
     NAME: "build_vit_fpn_backbone"
   VIT:
@@ -44,7 +44,7 @@ DATASETS:
   # TRAIN: ("publaynet_train",)
   # TEST: ("publaynet_val",)
   TRAIN: ("sberslides_train",)
-  TEST: ("sberslides_val",)
+  TEST: ("sberslides_test",)
 SOLVER:
   GRADIENT_ACCUMULATION_STEPS: 1
   BASE_LR: 0.0002

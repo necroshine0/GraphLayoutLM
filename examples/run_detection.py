@@ -13,7 +13,7 @@ Detection Training Script for MPViT.
 from detectron2.config import get_cfg
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.data.datasets import register_coco_instances
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
+from detectron2.engine import default_argument_parser, default_setup, launch
 
 from GraphLayoutLM.ditod import MyTrainer
 from GraphLayoutLM.ditod import add_vit_config
@@ -75,14 +75,6 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true", help="enable debug mode")
     args = parser.parse_args()
     print("Command Line Args:", args)
-
-    if args.debug:
-        import debugpy
-
-        print("Enabling attach starts.")
-        debugpy.listen(address=('0.0.0.0', 9310))
-        debugpy.wait_for_client()
-        print("Enabling attach ends.")
 
     launch(
         main,

@@ -4,3 +4,5 @@ from .graphlayoutlm import (
     GraphLayoutLMForQuestionAnswering,
     GraphLayoutLMForSequenceClassification,
 )
+
+from .configuration_graphlayoutlm import GraphLayoutLMConfig

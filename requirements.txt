@@ -4,3 +4,4 @@ datasets==2.16.1
 transformers==4.28.1  
 timm==0.4.12
 seqeval==1.2.2
+shapely==2.0.2

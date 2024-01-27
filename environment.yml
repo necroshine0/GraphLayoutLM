@@ -2,15 +2,16 @@ name: graphlayoutlm
 channels:
   - pytorch
   - conda-forge
+  - nvidia
   - anaconda
   - defaults
 dependencies:
   - python=3.9
   - numpy
   - pywin32
-  - cudatoolkit=11.0
-  - pytorch==1.10.0
-  - torchvision==0.11.1
+  - cudatoolkit=11.8
+  - pytorch=2.1.0
+  - torchvision==0.16.0
   - git
   - pip
   - pip:
@@ -21,3 +22,4 @@ dependencies:
     - transformers==4.28.1
     - timm==0.4.12
     - seqeval==1.2.2
+    - shapely==2.0.2
