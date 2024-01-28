@@ -54,10 +54,10 @@ def main(args):
     if args.do_eval or args.do_train:
         splits.append('test')
 
-    getter = lambda split: get_dataset_dict(f"datasets/{args.dataset_name}", split, tokenizer, args)
     for split in splits:
-        folder_name = args.dataset_name.replace('-', '') + '_' + split
-        DatasetCatalog.register(folder_name, getter(split))
+        folder_name = f"{args.dataset_name.replace('-', '')}_{split}"
+        DatasetCatalog.register(folder_name,
+                    lambda x=split: get_dataset_dict(f"datasets/{args.dataset_name}", x, tokenizer, args))
 
 
     if args.eval_only:
@@ -75,17 +75,17 @@ def main(args):
 
 if __name__ == "__main__":
     parser = default_argument_parser()
-    parser.add_argument("--dataset_name", default="sber-slides")
-    parser.add_argument("--visual_embed", default=True)
-    parser.add_argument("--label_all_tokens", default=False)
-    parser.add_argument("--imagenet_default_mean_and_std", default=False)
-    parser.add_argument("--input_size", default=224)
-    parser.add_argument("--train_interpolation", default="bicubic")
-    parser.add_argument("--preprocessing_num_workers", default=None)
-    parser.add_argument("--overwrite_cache", default=True)
-    parser.add_argument("--do_train", default=True)
-    parser.add_argument("--do_eval", default=True)
-    parser.add_argument("--do_test", default=True)
+    parser.add_argument("--dataset_name", type=str, default="sber-slides")
+    parser.add_argument("--visual_embed", type=bool, default=True)
+    parser.add_argument("--label_all_tokens", type=bool, default=False)
+    parser.add_argument("--imagenet_default_mean_and_std", type=bool, default=False)
+    parser.add_argument("--input_size", type=int, default=224)
+    parser.add_argument("--train_interpolation", type=str, default="bicubic")
+    parser.add_argument("--preprocessing_num_workers", type=bool, default=None)
+    parser.add_argument("--overwrite_cache", type=bool, default=True)
+    parser.add_argument("--do_train", type=bool, default=True)
+    parser.add_argument("--do_eval", type=bool, default=True)
+    parser.add_argument("--do_test", type=bool, default=True)
     args = parser.parse_args()
     print("Command Line Args:", args)
 

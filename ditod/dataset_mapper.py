@@ -98,7 +98,7 @@ class DetrDatasetMapper:
         self.img_format = cfg.INPUT.FORMAT
         self.is_train = is_train
 
-        self.layoutlmv3 = 'layoutlmv3' in cfg.MODEL.VIT.NAME
+        self.layoutlmv3 = 'layoutlm' in cfg.MODEL.VIT.NAME
 
         if self.layoutlmv3:
             # We disable the flipping/cropping augmentation in layoutlmv3 to be consistent with pre-training
@@ -143,7 +143,9 @@ class DetrDatasetMapper:
                 # В dataset_dict тоже меняется, ибо по ссылке
                 annots[i]['bbox'] = new_bboxes[i].tolist()
 
-        image = utils.read_image(dataset_dict["file_name"], format=self.img_format)
+
+        img_name_key = "file_name" if "file_name" in dataset_dict.keys() else "image_path"
+        image = utils.read_image(dataset_dict[img_name_key], format=self.img_format)
         utils.check_image_size(dataset_dict, image)
 
         if self.crop_gen is None:
@@ -168,7 +170,7 @@ class DetrDatasetMapper:
             dataset_dict.pop("annotations", None)
             return dataset_dict
 
-        if "annotations" in dataset_dict:
+        if "annotations" in dataset_dict.keys():
             # USER: Modify this if you want to keep them for some reason.
             for anno in dataset_dict["annotations"]:
                 if not self.mask_on:

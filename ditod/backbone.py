@@ -79,8 +79,7 @@ class VIT_Backbone(Backbone):
             # disable relative bias as DiT
             config.has_spatial_attention_bias = False
             config.has_relative_attention_bias = False
-            self.backbone = GraphLayoutLM(config, detection=True,
-                                               out_features=out_features, image_only=image_only)
+            self.backbone = GraphLayoutLM(config, detection=True, out_features=out_features, image_only=image_only)
         else:
             self.backbone = model_func(img_size=img_size,
                                        out_features=out_features,
@@ -95,7 +94,7 @@ class VIT_Backbone(Backbone):
         Returns:
             dict[str->Tensor]: names and the corresponding features
         """
-        if "layoutlmv3" in self.name:
+        if "layoutlm" in self.name:
             return self.backbone.forward(
                 input_ids=x["input_ids"] if "input_ids" in x else None,
                 bbox=x["bbox"] if "bbox" in x else None,

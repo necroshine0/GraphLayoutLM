@@ -99,7 +99,7 @@ class SubLayerConnection(nn.Module):
 class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
     def __init__(self, config, detection=False, out_features=None, image_only=False):
         super().__init__(config, detection, out_features, image_only)
-        self.model_base=LayoutLMv3Model(config)
+        self.model_base=LayoutLMv3Model(config, detection, out_features, image_only)
         self.graph_attention_layer=GraphAttentionLayer(config)
         self.sublayer=SubLayerConnection(config)
         self.init_weights()
@@ -134,6 +134,7 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             images=images,
             valid_span=valid_span,
         )
+        # print('OUTPUTS:', outputs.keys())
         sequence_output = self.sublayer(outputs[0], graph_mask, self.graph_attention_layer)
 
         if not return_dict:
