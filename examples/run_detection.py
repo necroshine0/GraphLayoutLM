@@ -9,14 +9,16 @@
 """
 Detection Training Script for MPViT.
 """
-
+import os
 from detectron2.config import get_cfg
 from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.data.datasets import register_coco_instances
+from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.engine import default_argument_parser, default_setup, launch
 
-from GraphLayoutLM.ditod import MyTrainer
-from GraphLayoutLM.ditod import add_vit_config
+from ditod import MyTrainer, add_vit_config
+from model.tokenization_graphlayoutlm_fast import GraphLayoutLMTokenizerFast
+from data.dataset_processor import get_dataset_dict
+
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -29,7 +31,7 @@ def setup(args):
     add_vit_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    cfg.SBERSLIDES_DATA_DIR = 'datasets/sber-slides'
+    # cfg.SBERSLIDES_DATA_DIR = 'datasets/sber-slides'
     cfg.freeze()
     default_setup(cfg, args)
     return cfg
@@ -38,24 +40,25 @@ def setup(args):
 def main(args):
     cfg = setup(args)
 
-    # TODO: load graph dataset from sber-slides/convert to format
-    register_coco_instances(
-        "sberslides_train", {},
-        cfg.SBERSLIDES_DATA_DIR_TRAIN + '/train.json',
-        cfg.SBERSLIDES_DATA_DIR
+    tokenizer = GraphLayoutLMTokenizerFast.from_pretrained(
+        os.path.split(cfg.MODEL.WEIGHTS)[0],
+        tokenizer_file=None,
+        use_fast=True,
+        add_prefix_space=True,
+        revision="main",
     )
 
-    register_coco_instances(
-        "sberslides_val", {},
-        cfg.SBERSLIDES_DATA_DIR_TEST + '/val.json',
-        cfg.SBERSLIDES_DATA_DIR
-    )
+    splits = []
+    if args.do_train:
+        splits.append('train')
+    if args.do_eval or args.do_train:
+        splits.append('test')
 
-    register_coco_instances(
-        "sberslides_test", {},
-        cfg.SBERSLIDES_DATA_DIR_TEST + '/val.json',
-        cfg.SBERSLIDES_DATA_DIR
-    )
+    getter = lambda split: get_dataset_dict(f"datasets/{args.dataset_name}", split, tokenizer, args)
+    for split in splits:
+        folder_name = args.dataset_name.replace('-', '') + '_' + split
+        DatasetCatalog.register(folder_name, getter(split))
+
 
     if args.eval_only:
         model = MyTrainer.build_model(cfg)
@@ -72,7 +75,17 @@ def main(args):
 
 if __name__ == "__main__":
     parser = default_argument_parser()
-    parser.add_argument("--debug", action="store_true", help="enable debug mode")
+    parser.add_argument("--dataset_name", default="sber-slides")
+    parser.add_argument("--visual_embed", default=True)
+    parser.add_argument("--label_all_tokens", default=False)
+    parser.add_argument("--imagenet_default_mean_and_std", default=False)
+    parser.add_argument("--input_size", default=224)
+    parser.add_argument("--train_interpolation", default="bicubic")
+    parser.add_argument("--preprocessing_num_workers", default=None)
+    parser.add_argument("--overwrite_cache", default=True)
+    parser.add_argument("--do_train", default=True)
+    parser.add_argument("--do_eval", default=True)
+    parser.add_argument("--do_test", default=True)
     args = parser.parse_args()
     print("Command Line Args:", args)
 

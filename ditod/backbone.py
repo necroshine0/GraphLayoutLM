@@ -17,10 +17,8 @@ from detectron2.modeling.backbone.fpn import LastLevelP6P7, LastLevelMaxPool
 
 from .beit import beit_base_patch16, dit_base_patch16, dit_large_patch16, beit_large_patch16
 from .deit import deit_base_patch16, mae_base_patch16
-from GraphLayoutLM.model.graphlayoutlm import GraphLayoutLM
-
+from model import GraphLayoutLM, GraphLayoutLMConfig
 from transformers import AutoConfig
-from GraphLayoutLM.model import GraphLayoutLMConfig
 
 __all__ = ["build_vit_fpn_backbone",]
 

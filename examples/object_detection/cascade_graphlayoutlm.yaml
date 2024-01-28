@@ -85,6 +85,6 @@ ADJUST_BOXES:
   GRID_RESOLUTION: 8.0
 SEED: 42
 OUTPUT_DIR: "/sber_base/output_dir/"
+CACHE_DIR: "/sber_base/cache_dir/"
 SBERSLIDES_DATA_DIR_TRAIN: "/datasets/sber-slides/train"
 SBERSLIDES_DATA_DIR_TEST: "/datasets/sber-slides/test"
-CACHE_DIR: "/sber_base/cache_dir/"
