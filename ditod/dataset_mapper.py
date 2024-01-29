@@ -144,8 +144,12 @@ class DetrDatasetMapper:
                 annots[i]['bbox'] = new_bboxes[i].tolist()
 
 
-        img_name_key = "file_name" if "file_name" in dataset_dict.keys() else "image_path"
-        image = utils.read_image(dataset_dict[img_name_key], format=self.img_format)
+        if "images" in dataset_dict.keys():
+            # (C, W, H) -> (W, H, C)
+            image = np.transpose(np.array(dataset_dict["images"]), (1, 2, 0))
+        else:
+            img_name_key = "file_name" if "file_name" in dataset_dict.keys() else "image_path"
+            image = utils.read_image(dataset_dict[img_name_key], format=self.img_format)
         utils.check_image_size(dataset_dict, image)
 
         if self.crop_gen is None:
@@ -158,6 +162,7 @@ class DetrDatasetMapper:
                     self.tfm_gens[:-1] + self.crop_gen + self.tfm_gens[-1:], image
                 )
 
+        # input: (224, 224, 3), final is everytime different -- ?
         image_shape = image.shape[:2]  # h, w
 
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
@@ -170,9 +175,11 @@ class DetrDatasetMapper:
             dataset_dict.pop("annotations", None)
             return dataset_dict
 
-        if "annotations" in dataset_dict.keys():
+        if "annotations" in dataset_dict.keys():  # FIXME
             # USER: Modify this if you want to keep them for some reason.
-            for anno in dataset_dict["annotations"]:
+            print(dataset_dict.keys())
+            print(dataset_dict['annotations'])
+            for anno in dataset_dict["annotations"]: # str
                 if not self.mask_on:
                     anno.pop("segmentation", None)
                 anno.pop("keypoints", None)
@@ -180,8 +187,7 @@ class DetrDatasetMapper:
             # USER: Implement additional transformations if you have other types of data
             annos = [
                 utils.transform_instance_annotations(obj, transforms, image_shape)
-                for obj in dataset_dict.pop("annotations")
-                if obj.get("iscrowd", 0) == 0
+                for obj in dataset_dict.pop("annotations") if obj.get("iscrowd", 0) == 0
             ]
             instances = utils.annotations_to_instances(annos, image_shape)
             dataset_dict["instances"] = utils.filter_empty_instances(instances)

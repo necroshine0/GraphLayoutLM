@@ -86,22 +86,22 @@ class GraphAttentionLayer(nn.Module):
 
 
 class SubLayerConnection(nn.Module):
-    def __init__(self,config):
+    def __init__(self, config):
         super(SubLayerConnection,self).__init__()
         self.norm = nn.LayerNorm(config.hidden_size, eps=1e-05)
-        self.dropout=nn.Dropout(p=config.hidden_dropout_prob)
-        self.size=config.hidden_size
+        self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
+        self.size = config.hidden_size
 
-    def forward(self,x,graph_mask,sublayer):
-        return x+self.dropout(sublayer(self.norm(x),graph_mask))
+    def forward(self, x, graph_mask, sublayer):
+        return x + self.dropout(sublayer(self.norm(x),graph_mask))
     
 
 class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
     def __init__(self, config, detection=False, out_features=None, image_only=False):
         super().__init__(config, detection, out_features, image_only)
-        self.model_base=LayoutLMv3Model(config, detection, out_features, image_only)
-        self.graph_attention_layer=GraphAttentionLayer(config)
-        self.sublayer=SubLayerConnection(config)
+        self.model_base = LayoutLMv3Model(config, detection, out_features, image_only)
+        self.graph_attention_layer = GraphAttentionLayer(config)
+        self.sublayer = SubLayerConnection(config)
         self.init_weights()
 
     def forward(
@@ -134,7 +134,11 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             images=images,
             valid_span=valid_span,
         )
-        # print('OUTPUTS:', outputs.keys())
+
+        # see LayoutLMv3Model's .forward()
+        if self.model_base.detection:
+            return outputs
+
         sequence_output = self.sublayer(outputs[0], graph_mask, self.graph_attention_layer)
 
         if not return_dict:
@@ -148,7 +152,7 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             attentions=outputs.attentions,
             cross_attentions=outputs.cross_attentions,
         )
-    
+
 
 class GraphLayoutLMClassificationHead(nn.Module):
     """

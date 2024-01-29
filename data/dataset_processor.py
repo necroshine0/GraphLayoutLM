@@ -15,6 +15,8 @@ from datasets import ClassLabel, Features, Sequence, load_dataset
 class DatasetProcessor(object):
     def __init__(self, args_namespace):
         self.args = args_namespace
+        # see dataset mapper, better not to use processing in dataset_processor
+        self.args.visual_embed = False  # FIXME
 
         self.column_names = None
         self.text_column_name = None
@@ -50,8 +52,8 @@ class DatasetProcessor(object):
 
             label = examples[self.label_column_name][org_batch_index]
             bbox = examples["bboxes"][org_batch_index]
-
             node_ids = examples["node_ids"][org_batch_index]
+            ipath = examples["image_path"][org_batch_index]
 
             previous_word_idx = None
             label_ids, bbox_inputs, new_node_ids = [], [], []
@@ -76,14 +78,12 @@ class DatasetProcessor(object):
                 previous_word_idx = word_idx
             labels.append(label_ids)
             bboxes.append(bbox_inputs)
-
+            image_paths.append(ipath)
             if self.args.visual_embed:
-                ipath = examples["image_path"][org_batch_index]
                 img = pil_loader(ipath)
                 for_patches, _ = common_transform(img, augmentation=augmentation)
                 patch = patch_transform(for_patches)
                 images.append(patch)
-                image_paths.append(ipath)
 
             new_node_data, new_ids = set_nodes(new_node_ids)
 
@@ -108,11 +108,16 @@ class DatasetProcessor(object):
             graph_mask_list.append(graph_mask)
         tokenized_inputs["graph_mask"] = graph_mask_list
 
-        tokenized_inputs["labels"] = labels
-        tokenized_inputs["bbox"] = bboxes
+        # FIXME
+        if self.args.annotation_tag:
+            tokenized_inputs["annotations"] = [{ "bbox": bboxes[i], "category_id": labels[i] }
+                                               for i in range(len(bboxes))]
+        else:
+            tokenized_inputs["labels"] = labels
+            tokenized_inputs["bbox"] = bboxes
+        tokenized_inputs["image_path"] = image_paths
         if self.args.visual_embed:
             tokenized_inputs["images"] = images
-            tokenized_inputs["image_path"] = image_paths
         return tokenized_inputs
 
     def get_transforms(self):
@@ -231,5 +236,3 @@ def main(dataset_name):
     )
 
     # datasets = process_datasets(datasets, thing_classes, tokenizer, args, for_detectron=False)
-
-

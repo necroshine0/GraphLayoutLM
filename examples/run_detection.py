@@ -59,7 +59,6 @@ def main(args):
         DatasetCatalog.register(folder_name,
                     lambda x=split: get_dataset_dict(f"datasets/{args.dataset_name}", x, tokenizer, args))
 
-
     if args.eval_only:
         model = MyTrainer.build_model(cfg)
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
@@ -77,6 +76,7 @@ if __name__ == "__main__":
     parser = default_argument_parser()
     parser.add_argument("--dataset_name", type=str, default="sber-slides")
     parser.add_argument("--visual_embed", type=bool, default=True)
+    parser.add_argument("--annotation_tag", type=bool, default=True)
     parser.add_argument("--label_all_tokens", type=bool, default=False)
     parser.add_argument("--imagenet_default_mean_and_std", type=bool, default=False)
     parser.add_argument("--input_size", type=int, default=224)
