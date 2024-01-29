@@ -11,12 +11,14 @@ from timm.data.constants import \
 from datasets.arrow_dataset import Dataset
 from datasets import ClassLabel, Features, Sequence, load_dataset
 
+from detectron2.structures.boxes import BoxMode
+
 
 class DatasetProcessor(object):
-    def __init__(self, args_namespace):
+    def __init__(self, args_namespace, boxmode='xyxy'):
         self.args = args_namespace
         # see dataset mapper, better not to use processing in dataset_processor
-        self.args.visual_embed = False  # FIXME
+        self.boxmode = BoxMode(0) if boxmode == 'xyxy' else BoxMode(1)  # xyxy or xywh
 
         self.column_names = None
         self.text_column_name = None
@@ -108,10 +110,17 @@ class DatasetProcessor(object):
             graph_mask_list.append(graph_mask)
         tokenized_inputs["graph_mask"] = graph_mask_list
 
-        # FIXME
         if self.args.annotation_tag:
-            tokenized_inputs["annotations"] = [{ "bbox": bboxes[i], "category_id": labels[i] }
-                                               for i in range(len(bboxes))]
+            annotations = []
+            assert len(bboxes) == len(labels)
+            for i in range(len(bboxes)):
+                assert len(bboxes[i]) == len(labels[i])
+                annotations.append(
+                    [{"bbox": bboxes[i][j], "category_id": labels[i][j], "bbox_mode": self.boxmode}
+                     for j in range(len(bboxes[i]))]
+                )
+
+            tokenized_inputs["annotations"] = annotations
         else:
             tokenized_inputs["labels"] = labels
             tokenized_inputs["bbox"] = bboxes

@@ -144,9 +144,9 @@ class DetrDatasetMapper:
                 annots[i]['bbox'] = new_bboxes[i].tolist()
 
 
-        if "images" in dataset_dict.keys():
+        if "image" in dataset_dict.keys():
             # (C, W, H) -> (W, H, C)
-            image = np.transpose(np.array(dataset_dict["images"]), (1, 2, 0))
+            image = np.transpose(np.array(dataset_dict["image"]), (1, 2, 0))
         else:
             img_name_key = "file_name" if "file_name" in dataset_dict.keys() else "image_path"
             image = utils.read_image(dataset_dict[img_name_key], format=self.img_format)
@@ -177,8 +177,6 @@ class DetrDatasetMapper:
 
         if "annotations" in dataset_dict.keys():  # FIXME
             # USER: Modify this if you want to keep them for some reason.
-            print(dataset_dict.keys())
-            print(dataset_dict['annotations'])
             for anno in dataset_dict["annotations"]: # str
                 if not self.mask_on:
                     anno.pop("segmentation", None)

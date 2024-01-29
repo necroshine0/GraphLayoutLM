@@ -41,7 +41,17 @@ To download, use:
 
 ## Train on SBER presentations
 
-For base version, use:
+**Object Detection:**
+
+```
+!cd GraphLayoutLM && python examples/run_detection.py \
+    --dataset_name sber-slides --annotation_tag 1 --visual_embed 0 \
+    --config-file "examples/object_detection/cascade_graphlayoutlm.yaml" \
+    MODEL.WEIGHTS "pretrained/graphlayoutlm-base/pytorch_model.bin" \
+    OUTPUT_DIR "sber_base/output_dir" CACHE_DIR "sber_base/cache_dir"
+```
+
+**Tag Classification:**
 
 ```
 !cd GraphLayoutLM/examples && python run_cord.py \

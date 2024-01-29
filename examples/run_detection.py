@@ -31,7 +31,6 @@ def setup(args):
     add_vit_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    # cfg.SBERSLIDES_DATA_DIR = 'datasets/sber-slides'
     cfg.freeze()
     default_setup(cfg, args)
     return cfg
@@ -73,10 +72,11 @@ def main(args):
 
 
 if __name__ == "__main__":
+    # NOTE: bool options set with --option False are True
     parser = default_argument_parser()
     parser.add_argument("--dataset_name", type=str, default="sber-slides")
-    parser.add_argument("--visual_embed", type=bool, default=True)
-    parser.add_argument("--annotation_tag", type=bool, default=True)
+    parser.add_argument("--visual_embed", type=int, default=1)
+    parser.add_argument("--annotation_tag", type=int, default=0)
     parser.add_argument("--label_all_tokens", type=bool, default=False)
     parser.add_argument("--imagenet_default_mean_and_std", type=bool, default=False)
     parser.add_argument("--input_size", type=int, default=224)
