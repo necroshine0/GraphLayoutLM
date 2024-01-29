@@ -122,10 +122,10 @@ def main():
     files = glob(f"{sber_path}/json/*")
     print("Dataset size:", len(files))
 
-    files_train, files_test = train_test_split(files, test_size=31, random_state=10)
+    files_train, files_test = train_test_split(files, test_size=31, random_state=42)
     files_dev = []
     if use_dev:
-        files_test, files_dev = train_test_split(files_test, test_size=1, random_state=10)
+        files_test, files_dev = train_test_split(files_test, test_size=1, random_state=42)
     sets_dict = {"train": files_train, "dev": files_dev, "test": files_test}
     print(f"train/dev/test: {len(files_train)}/{len(files_dev)}/{len(files_test)}")
 

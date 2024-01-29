@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import numpy as np
 from torchvision import transforms
@@ -27,6 +28,15 @@ class DatasetProcessor(object):
         self.label_to_id = None
         self.tokenizer = None
 
+        if self.args.dataset_name == 'sber-slides':
+            with open("datasets/sber-slides/meta.json", "r") as f:
+                meta = json.load(f)
+            files = list(map(lambda x: os.path.split(x['file_name'])[-1], meta["images"]))
+            ids = list(map(lambda x: x['id'], meta["images"]))
+            self.img_name_to_id = dict(zip(files, ids))
+        else:
+            self.img_name_to_id = None
+
     def init_meta(self, thing_classes):
         self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image', 'image_path']
         self.label_column_name = 'ner_tags'
@@ -47,7 +57,8 @@ class DatasetProcessor(object):
         if self.args.visual_embed:
             common_transform, patch_transform = self.get_transforms()
 
-        labels, bboxes, images, image_paths, nodes, edges = [], [], [], [], [], []
+        labels, bboxes, nodes, edges = [], [], [], []
+        images, image_paths, widths, heights = [], [], [], []
         for batch_index in range(len(tokenized_inputs["input_ids"])):
             word_ids = tokenized_inputs.word_ids(batch_index=batch_index)
             org_batch_index = tokenized_inputs["overflow_to_sample_mapping"][batch_index]
@@ -83,10 +94,13 @@ class DatasetProcessor(object):
             labels.append(label_ids)
             bboxes.append(bbox_inputs)
             image_paths.append(ipath)
+
+            img = pil_loader(ipath)
             if self.args.visual_embed:
-                img = pil_loader(ipath)
                 for_patches, _ = common_transform(img, augmentation=augmentation)
                 patch = patch_transform(for_patches)
+                _, width, height = patch.shape
+                widths.append(width); heights.append(height)
                 images.append(patch)
 
             new_node_data, new_ids = set_nodes(new_node_ids)
@@ -126,9 +140,16 @@ class DatasetProcessor(object):
         else:
             tokenized_inputs["labels"] = labels
             tokenized_inputs["bbox"] = bboxes
-        tokenized_inputs["image_path"] = image_paths
+        tokenized_inputs["file_name"] = image_paths
+        tokenized_inputs["width"] = widths
+        tokenized_inputs["height"] = heights
         if self.args.visual_embed:
             tokenized_inputs["image"] = images
+            if self.img_name_to_id is not None:
+                tokenized_inputs["image_id"] = list(map(
+                    lambda x: self.img_name_to_id[os.path.split(x)[-1]],
+                    tokenized_inputs["file_name"]
+                ))
         return tokenized_inputs
 
     def get_transforms(self):
