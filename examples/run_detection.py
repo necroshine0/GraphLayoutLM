@@ -17,7 +17,7 @@ from detectron2.engine import default_argument_parser, default_setup, launch
 
 from ditod import MyTrainer, add_vit_config
 from model.tokenization_graphlayoutlm_fast import GraphLayoutLMTokenizerFast
-from data.dataset_processor import get_dataset_dict
+from data.dataset_processor import get_dataset_dict, get_thing_classes_from_name
 
 
 import warnings
@@ -55,8 +55,10 @@ def main(args):
 
     for split in splits:
         folder_name = f"{args.dataset_name.replace('-', '')}_{split}"
+        dataset_name = f"datasets/{args.dataset_name}"
         DatasetCatalog.register(folder_name,
-                    lambda x=split: get_dataset_dict(f"datasets/{args.dataset_name}", x, tokenizer, args))
+                    lambda x=split: get_dataset_dict(dataset_name, x, tokenizer, args))
+        MetadataCatalog.get(folder_name).thing_classes = get_thing_classes_from_name(dataset_name)
 
     if args.eval_only:
         model = MyTrainer.build_model(cfg)

@@ -62,10 +62,12 @@ class DatasetProcessor(object):
             for word_idx in word_ids:
                 # Special tokens have a word id that is None. We set the label to -100 so they are automatically
                 # ignored in the loss function.
-                if word_idx is None:
-                    label_ids.append(-100)
-                    bbox_inputs.append([0, 0, 0, 0])
-                    new_node_ids.append(-1)
+                if word_idx is None:  # FIXME
+                    # Дает ошибку при обращении к thing_classes
+                    # label_ids.append(-100)
+                    # bbox_inputs.append([0, 0, 0, 0])
+                    # new_node_ids.append(-1)
+                    pass
                 # We set the label for the first token of each word.
                 elif word_idx != previous_word_idx:
                     label_ids.append(label[word_idx])
@@ -218,15 +220,24 @@ def process_dataset(dataset, thing_classes, tokenizer, args):
 
 def load_dataset_from_name(dataset_name):
     if dataset_name == 'cord':
-        import data.cord.cord
-        from data.cord.cord import CordDataset
+        import data.cord.cord; from data.cord.cord import CordDataset
         thing_classes = CordDataset.tags_names
         datasets = load_dataset(os.path.abspath(data.cord.cord.__file__), trust_remote_code=True)
     elif 'sber' in dataset_name:
-        import data.cord.sber
-        from data.cord.sber import SberDataset
+        import data.cord.sber; from data.cord.sber import SberDataset
         thing_classes = SberDataset.tags_names
         datasets = load_dataset(os.path.abspath(data.cord.sber.__file__), trust_remote_code=True)
     else:
         raise NotImplementedError()
     return datasets, thing_classes
+
+
+def get_thing_classes_from_name(dataset_name):
+    if dataset_name == 'cord':
+        import data.cord.cord; from data.cord.cord import CordDataset
+        return CordDataset.tags_names
+    elif 'sber' in dataset_name:
+        import data.cord.sber; from data.cord.sber import SberDataset
+        return SberDataset.tags_names
+    else:
+        raise NotImplementedError()
