@@ -126,7 +126,7 @@ class DatasetProcessor(object):
             tokenized_inputs["bbox"] = bboxes
         tokenized_inputs["image_path"] = image_paths
         if self.args.visual_embed:
-            tokenized_inputs["images"] = images
+            tokenized_inputs["image"] = images
         return tokenized_inputs
 
     def get_transforms(self):
@@ -230,18 +230,3 @@ def load_dataset_from_name(dataset_name):
     else:
         raise NotImplementedError()
     return datasets, thing_classes
-
-
-def main(dataset_name):
-    datasets, thing_classes = load_dataset_from_name(dataset_name)
-
-    from model.tokenization_graphlayoutlm_fast import GraphLayoutLMTokenizerFast
-    tokenizer = GraphLayoutLMTokenizerFast.from_pretrained(
-        "pretrained/graphlayoutlm-base",
-        tokenizer_file=None,
-        use_fast=True,
-        add_prefix_space=True,
-        revision="main",
-    )
-
-    # datasets = process_datasets(datasets, thing_classes, tokenizer, args, for_detectron=False)

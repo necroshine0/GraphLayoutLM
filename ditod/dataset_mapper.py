@@ -99,7 +99,6 @@ class DetrDatasetMapper:
         self.is_train = is_train
 
         self.layoutlmv3 = 'layoutlm' in cfg.MODEL.VIT.NAME
-
         if self.layoutlmv3:
             # We disable the flipping/cropping augmentation in layoutlmv3 to be consistent with pre-training
             # Note that we do not disable resizing augmentation since the text boxes are also resized/normalized.
@@ -168,14 +167,17 @@ class DetrDatasetMapper:
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
+        dataset_dict["image"] = torch.as_tensor(
+                np.ascontiguousarray(image.transpose(2, 0, 1)),
+                dtype=torch.float16
+            )
 
         if not self.is_train:
             # USER: Modify this if you want to keep them for some reason.
             dataset_dict.pop("annotations", None)
             return dataset_dict
 
-        if "annotations" in dataset_dict.keys():  # FIXME
+        if "annotations" in dataset_dict.keys():
             # USER: Modify this if you want to keep them for some reason.
             for anno in dataset_dict["annotations"]: # str
                 if not self.mask_on:
