@@ -96,15 +96,15 @@ class DatasetProcessor(object):
             image_paths.append(ipath)
 
             img = pil_loader(ipath)
+            width, height = img.size
             if self.args.visual_embed:
                 for_patches, _ = common_transform(img, augmentation=augmentation)
                 patch = patch_transform(for_patches)
                 _, width, height = patch.shape
-                widths.append(width); heights.append(height)
                 images.append(patch)
+            widths.append(width); heights.append(height)
 
             new_node_data, new_ids = set_nodes(new_node_ids)
-
             new_edges_data = set_edges(examples["edges"][org_batch_index], new_ids)
             nodes.append(new_node_data)
             edges.append(new_edges_data)
@@ -137,6 +137,7 @@ class DatasetProcessor(object):
                 )
 
             tokenized_inputs["annotations"] = annotations
+            del tokenized_inputs["labels"], tokenized_inputs["bbox"]
         else:
             tokenized_inputs["labels"] = labels
             tokenized_inputs["bbox"] = bboxes
@@ -145,11 +146,11 @@ class DatasetProcessor(object):
         tokenized_inputs["height"] = heights
         if self.args.visual_embed:
             tokenized_inputs["image"] = images
-            if self.img_name_to_id is not None:
-                tokenized_inputs["image_id"] = list(map(
-                    lambda x: self.img_name_to_id[os.path.split(x)[-1]],
-                    tokenized_inputs["file_name"]
-                ))
+        if self.img_name_to_id is not None:
+            tokenized_inputs["image_id"] = list(map(
+                lambda x: self.img_name_to_id[os.path.split(x)[-1]],
+                tokenized_inputs["file_name"]
+            ))
         return tokenized_inputs
 
     def get_transforms(self):
