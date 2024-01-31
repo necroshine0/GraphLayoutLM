@@ -3,7 +3,6 @@ import json
 import datasets
 from data.cord.base_dataset import BaseDataset
 from utils.image_utils import load_image, normalize_bbox, quad_to_box
-logger = datasets.logging.get_logger(__name__)
 
 
 class SberConfig(datasets.BuilderConfig):
@@ -83,15 +82,3 @@ class SberDataset(BaseDataset):
             "image": image,
             "image_path": image_path
         }
-
-    def _generate_examples(self, filepath):
-        logger.info("⏳ Generating examples from = %s", filepath)
-        ann_dir = os.path.join(filepath, "reordered_json")
-        graph_dir = os.path.join(filepath, "graph")
-        img_dir = os.path.join(filepath, "image")
-        for guid, file in enumerate(sorted(os.listdir(ann_dir))):
-            record = self.process_file(file, graph_dir, ann_dir, img_dir)
-            if record is None:
-                continue
-            record["id"] = str(guid)
-            yield guid, record

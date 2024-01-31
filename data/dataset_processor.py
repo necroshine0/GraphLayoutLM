@@ -29,7 +29,10 @@ class DatasetProcessor(object):
         self.tokenizer = None
 
         if self.args.dataset_name == 'sber-slides':
-            with open("datasets/sber-slides/meta.json", "r") as f:
+            meta_file = "datasets/sber-slides/meta.json"
+            if "GraphLayoutLM" not in os.getcwd():
+                meta_file = os.path.join("GraphLayoutLM", meta_file)
+            with open(meta_file, "r") as f:
                 meta = json.load(f)
             files = list(map(lambda x: os.path.split(x['file_name'])[-1], meta["images"]))
             ids = list(map(lambda x: x['id'], meta["images"]))
@@ -198,7 +201,7 @@ def get_dataset_dict(dataset_folder, split, tokenizer, args):
     # dataset_folder = ".../datasets/dataset_name"
     dataset_name = os.path.split(dataset_folder)[-1]
     if dataset_name == "CORD":
-        from data.cord.sber import CordDataset as UsedDataset
+        from data.cord.cord import CordDataset as UsedDataset
     elif dataset_name == "sber-slides":
         from data.cord.sber import SberDataset as UsedDataset
     else:

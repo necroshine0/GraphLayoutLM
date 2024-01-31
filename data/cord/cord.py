@@ -57,53 +57,56 @@ class CordDataset(BaseDataset):
     description = "https://github.com/clovaai/cord/"
     homepage = "https://github.com/clovaai/cord/"
 
-    def _generate_examples(self, filepath):
-        logger.info("⏳ Generating examples from = %s", filepath)
-        ann_dir = os.path.join(filepath, "reordered_json")
-        graph_dir=os.path.join(filepath, "graph")
-        img_dir = os.path.join(filepath, "image")
-        for guid, file in enumerate(sorted(os.listdir(ann_dir))):
-            words, bboxes, ner_tags, node_ids, edges = [], [], [], [], []
-            with open(os.path.join(graph_dir, file), "r", encoding="utf8") as f:
-                graph_data = json.load(f)
-            edges = graph_data["edges"]
-            if len(edges) == 0:
-                print("len error")
-                exit(0)
+    @staticmethod
+    def process_file(file, graph_dir, ann_dir, img_dir):
+        words, bboxes, ner_tags, node_ids, edges = [], [], [], [], []
+        with open(os.path.join(graph_dir, file), "r", encoding="utf8") as f:
+            graph_data = json.load(f)
+        edges = graph_data["edges"]
+        if len(edges) == 0:
+            print("\nlen error:", os.path.join(graph_dir, file))
+            # exit(0)
+            return None
 
-            file_path = os.path.join(ann_dir, file)
-            with open(file_path, "r", encoding="utf8") as f:
-                data = json.load(f)
-            image_path = os.path.join(img_dir, file)
-            image_path = image_path.replace("json", "png")
-            image, size = load_image(image_path)
-            for item in data["valid_line"]:
-                cur_line_bboxes = []
-                line_words, label = item["words"], item["category"]
-                line_words = [w for w in line_words if w["text"].strip() != ""]
-                if len(line_words) == 0:
-                    continue
-                if label == "other":
-                    for w in line_words:
-                        words.append(w["text"])
-                        ner_tags.append("O")
-                        cur_line_bboxes.append(normalize_bbox(quad_to_box(w["quad"]), size))
-                        node_ids.append(item["id"])
-                else:
-                    words.append(line_words[0]["text"])
-                    ner_tags.append("B-" + label.upper())
-                    cur_line_bboxes.append(normalize_bbox(quad_to_box(line_words[0]["quad"]), size))
+        file_path = os.path.join(ann_dir, file)
+        with open(file_path, "r", encoding="utf8") as f:
+            data = json.load(f)
+        image_path = os.path.join(img_dir, file)
+        image_path = image_path.replace("json", "png")
+        image, size = load_image(image_path)
+        for item in data["valid_line"]:
+            cur_line_bboxes = []
+            line_words, label = item["words"], item["category"]
+            line_words = [w for w in line_words if w["text"].strip() != ""]
+            if len(line_words) == 0:
+                continue
+            if label == "other":
+                for w in line_words:
+                    words.append(w["text"])
+                    ner_tags.append("O")
+                    cur_line_bboxes.append(normalize_bbox(quad_to_box(w["quad"]), size))
                     node_ids.append(item["id"])
-                    for w in line_words[1:]:
-                        words.append(w["text"])
-                        ner_tags.append("I-" + label.upper())
-                        cur_line_bboxes.append(normalize_bbox(quad_to_box(w["quad"]), size))
-                        node_ids.append(item["id"])
-                # by default: --segment_level_layout 1
-                # if do not want to use segment_level_layout, comment the following line
-                cur_line_bboxes = self.get_line_bbox(cur_line_bboxes)
-                bboxes.extend(cur_line_bboxes)
-            # yield guid, {"id": str(guid), "words": words, "bboxes": bboxes, "ner_tags": ner_tags, "image": image}
-            yield guid, {"id": str(guid), "words": words, "bboxes": bboxes, "ner_tags": ner_tags,
-                         "node_ids":node_ids,"edges":edges,
-                         "image": image, "image_path": image_path}
+            else:
+                words.append(line_words[0]["text"])
+                ner_tags.append("B-" + label.upper())
+                cur_line_bboxes.append(normalize_bbox(quad_to_box(line_words[0]["quad"]), size))
+                node_ids.append(item["id"])
+                for w in line_words[1:]:
+                    words.append(w["text"])
+                    ner_tags.append("I-" + label.upper())
+                    cur_line_bboxes.append(normalize_bbox(quad_to_box(w["quad"]), size))
+                    node_ids.append(item["id"])
+            # by default: --segment_level_layout 1
+            # if do not want to use segment_level_layout, comment the following line
+            cur_line_bboxes = CordDataset.get_line_bbox(cur_line_bboxes)
+            bboxes.extend(cur_line_bboxes)
+
+        return {
+            "words": words,
+            "bboxes": bboxes,
+            "ner_tags": ner_tags,
+            "node_ids": node_ids,
+            "edges": edges,
+            "image": image,
+            "image_path": image_path
+        }

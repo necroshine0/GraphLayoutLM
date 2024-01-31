@@ -3,6 +3,8 @@ Reference: https://huggingface.co/datasets/pierresi/cord/blob/main/cord.py
 '''
 import os
 import datasets
+logger = datasets.logging.get_logger(__name__)
+
 from data.cord.graph_cord import graph_builder
 
 
@@ -88,5 +90,18 @@ class BaseDataset(datasets.GeneratorBasedBuilder):
             ),
         ]
 
-    def _generate_examples(self, filepath):
+    @staticmethod
+    def process_file(file, graph_dir, ann_dir, img_dir):
         raise NotImplemented
+
+    def _generate_examples(self, filepath):
+        logger.info("⏳ Generating examples from = %s", filepath)
+        ann_dir = os.path.join(filepath, "reordered_json")
+        graph_dir = os.path.join(filepath, "graph")
+        img_dir = os.path.join(filepath, "image")
+        for guid, file in enumerate(sorted(os.listdir(ann_dir))):
+            record = self.process_file(file, graph_dir, ann_dir, img_dir)
+            if record is None:
+                continue
+            record["id"] = str(guid)
+            yield guid, record
