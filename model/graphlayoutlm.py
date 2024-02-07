@@ -40,8 +40,8 @@ class GraphLayoutLMPreTrainedModel(PreTrainedModel):
 class GraphAttentionLayer(nn.Module):
     def __init__(self, config):
         super(GraphAttentionLayer, self).__init__()
-        self.num_attention_heads = config.num_attention_heads // 2
-        self.attention_head_size = config.hidden_size // self.num_attention_heads
+        self.num_attention_heads = int(config.num_attention_heads / 2)
+        self.attention_head_size = int(config.hidden_size / self.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
         self.query = nn.Linear(config.hidden_size, self.all_head_size)
         self.key = nn.Linear(config.hidden_size, self.all_head_size)
