@@ -884,6 +884,7 @@ class LayoutLM3Model(LayoutLM3PreTrainedModel):
         # input head_mask has shape [num_heads] or [num_hidden_layers x num_heads]
         # and head_mask is converted to shape [num_hidden_layers x batch x num_heads x seq_length x seq_length]
         head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
+        print("layoutlm3 head_mask shape:".upper(), head_mask.shape)
 
         if not self.image_only:
             if bbox is None:
@@ -972,6 +973,8 @@ class LayoutLM3Model(LayoutLM3PreTrainedModel):
 
         if not return_dict:
             return (sequence_output, pooled_output) + encoder_outputs[1:]
+
+        print("layoutlm3 sequence_output shape:".upper(), sequence_output.shape)
 
         return BaseModelOutputWithPoolingAndCrossAttentions(
             last_hidden_state=sequence_output,

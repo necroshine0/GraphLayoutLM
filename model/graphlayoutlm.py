@@ -11,7 +11,8 @@ from transformers.modeling_outputs import (
     SequenceClassifierOutput,
 )
 
-from model.basemodel import LayoutLMv3Model  # from unilm
+from model.basemodel import LayoutLMv3Model  # from unilm -- ???
+from model.layoutlmv3 import LayoutLM3Model
 from model.configuration_graphlayoutlm import GraphLayoutLMConfig
 
 
@@ -79,6 +80,7 @@ class GraphAttentionLayer(nn.Module):
         context_layer = context_layer.view(*new_context_layer_shape)
 
         outputs = self.final(context_layer)
+        print("GAT outputs shape:".upper(), outputs.shape)
         return outputs
 
 
@@ -96,7 +98,7 @@ class SubLayerConnection(nn.Module):
 class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
     def __init__(self, config, detection=False, out_features=None, image_only=False):
         super().__init__(config, detection, out_features, image_only)
-        self.model_base = LayoutLMv3Model(config, detection, out_features, image_only)
+        self.model_base = LayoutLM3Model(config, detection, out_features, image_only)
         self.graph_attention_layer = GraphAttentionLayer(config)
         self.sublayer = SubLayerConnection(config)
         self.init_weights()
@@ -138,6 +140,8 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             return outputs
 
         print("model_base outputs[0] shape:".upper(), outputs[0].shape)
+        assert outputs[0].shape == torch.Size([2, 709, 768])
+
         print("graph_mask shape:".upper(), graph_mask.shape)
         sequence_output = self.sublayer(outputs[0], graph_mask, self.graph_attention_layer)
 
