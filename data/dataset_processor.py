@@ -32,6 +32,9 @@ class DatasetProcessor(object):
             meta_file = "datasets/sber-slides/meta.json"
             if "GraphLayoutLM" not in os.getcwd():
                 meta_file = os.path.join("GraphLayoutLM", meta_file)
+            elif os.path.split(os.getcwd())[-1] != "GraphLayoutLM":
+                meta_file = f"../{meta_file}"
+
             with open(meta_file, "r") as f:
                 meta = json.load(f)
             files = list(map(lambda x: os.path.split(x['file_name'])[-1], meta["images"]))
@@ -39,6 +42,8 @@ class DatasetProcessor(object):
             self.img_name_to_id = dict(zip(files, ids))
         else:
             self.img_name_to_id = None
+
+        self.input_len = 709  # from model weights shape
 
     def init_meta(self, thing_classes):
         self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image', 'image_path']
@@ -114,10 +119,9 @@ class DatasetProcessor(object):
 
         # build graph mask
         graph_mask_list = []
-        input_len = 709
         for nodes_data, edges_data in zip(nodes, edges):
             edges_len = len(edges_data)
-            graph_mask = -9e15 * np.ones((input_len, input_len))
+            graph_mask = -9e15 * np.ones((self.input_len, self.input_len))
             for edge_i in range(edges_len):
                 edge = edges_data[edge_i]
                 if edge[0] == -1:
