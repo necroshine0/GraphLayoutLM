@@ -43,7 +43,7 @@ class DatasetProcessor(object):
         else:
             self.img_name_to_id = None
 
-        self.input_len = 709  # from model weights shape
+        self.input_len = 300  # from model weights shape, 709
 
     def init_meta(self, thing_classes):
         self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image', 'image_path']
