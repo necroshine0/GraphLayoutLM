@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from transformers import apply_chunking_to_forward
 from transformers.modeling_outputs import (
@@ -22,13 +23,13 @@ from transformers.utils import logging
 from transformers.models.layoutlmv3.configuration_layoutlmv3 import LayoutLMv3Config
 from timm.models.layers import to_2tuple
 
-
 logger = logging.get_logger(__name__)
 
 
 class PatchEmbed(nn.Module):
     """ Image to Patch Embedding
     """
+
     def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768):
         super().__init__()
         img_size = to_2tuple(img_size)
@@ -45,13 +46,15 @@ class PatchEmbed(nn.Module):
 
         if position_embedding is not None:
             # interpolate the position embedding to the corresponding size
-            position_embedding = position_embedding.view(1, self.patch_shape[0], self.patch_shape[1], -1).permute(0, 3, 1, 2)
+            position_embedding = position_embedding.view(1, self.patch_shape[0], self.patch_shape[1], -1).permute(0, 3,
+                                                                                                                  1, 2)
             Hp, Wp = x.shape[2], x.shape[3]
             position_embedding = F.interpolate(position_embedding, size=(Hp, Wp), mode='bicubic')
             x = x + position_embedding
 
         x = x.flatten(2).transpose(1, 2)
         return x
+
 
 class LayoutLMv3Embeddings(nn.Module):
     """
@@ -124,13 +127,13 @@ class LayoutLMv3Embeddings(nn.Module):
         return incremental_indices.long() + padding_idx
 
     def forward(
-        self,
-        input_ids=None,
-        bbox=None,
-        token_type_ids=None,
-        position_ids=None,
-        inputs_embeds=None,
-        past_key_values_length=0,
+            self,
+            input_ids=None,
+            bbox=None,
+            token_type_ids=None,
+            position_ids=None,
+            inputs_embeds=None,
+            past_key_values_length=0,
     ):
         if position_ids is None:
             if input_ids is not None:
@@ -251,16 +254,16 @@ class LayoutLMv3SelfAttention(nn.Module):
         return nn.Softmax(dim=-1)(new_attention_scores)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
-        rel_pos=None,
-        rel_2d_pos=None,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
+            rel_pos=None,
+            rel_2d_pos=None,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -359,16 +362,16 @@ class LayoutLMv3Attention(nn.Module):
         self.pruned_heads = self.pruned_heads.union(heads)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
-        rel_pos=None,
-        rel_2d_pos=None,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
+            rel_pos=None,
+            rel_2d_pos=None,
     ):
         self_outputs = self.self(
             hidden_states,
@@ -398,16 +401,16 @@ class LayoutLMv3Layer(nn.Module):
         self.output = RobertaOutput(config)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
-        rel_pos=None,
-        rel_2d_pos=None,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
+            rel_pos=None,
+            rel_2d_pos=None,
     ):
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
         self_attn_past_key_value = past_key_value[:2] if past_key_value is not None else None
@@ -556,22 +559,22 @@ class LayoutLMv3Encoder(nn.Module):
         return rel_2d_pos
 
     def forward(
-        self,
-        hidden_states,
-        bbox=None,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_values=None,
-        use_cache=None,
-        output_attentions=False,
-        output_hidden_states=False,
-        return_dict=True,
-        position_ids=None,
-        Hp=None,
-        Wp=None,
-        valid_span=None,
+            self,
+            hidden_states,
+            bbox=None,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_values=None,
+            use_cache=None,
+            output_attentions=False,
+            output_hidden_states=False,
+            return_dict=True,
+            position_ids=None,
+            Hp=None,
+            Wp=None,
+            valid_span=None,
     ):
         all_hidden_states = () if output_hidden_states else None
         all_self_attentions = () if output_attentions else None
@@ -579,7 +582,8 @@ class LayoutLMv3Encoder(nn.Module):
 
         next_decoder_cache = () if use_cache else None
 
-        rel_pos = self._cal_1d_pos_emb(hidden_states, position_ids, valid_span) if self.has_relative_attention_bias else None
+        rel_pos = self._cal_1d_pos_emb(hidden_states, position_ids,
+                                       valid_span) if self.has_relative_attention_bias else None
         rel_2d_pos = self._cal_2d_pos_emb(hidden_states, bbox) if self.has_spatial_attention_bias else None
 
         if self.detection:
@@ -608,6 +612,7 @@ class LayoutLMv3Encoder(nn.Module):
                         # The above line will cause error:
                         # RuntimeError: Trying to backward through the graph a second time
                         # (or directly access saved tensors after they have already been freed).
+
                     return custom_forward
 
                 layer_outputs = torch.utils.checkpoint.checkpoint(
@@ -644,7 +649,7 @@ class LayoutLMv3Encoder(nn.Module):
                     all_cross_attentions = all_cross_attentions + (layer_outputs[2],)
 
             if self.detection and i in self.out_indices:
-                xp = hidden_states[:, -Hp*Wp:, :].permute(0, 2, 1).reshape(len(hidden_states), -1, Hp, Wp)
+                xp = hidden_states[:, -Hp * Wp:, :].permute(0, 2, 1).reshape(len(hidden_states), -1, Hp, Wp)
                 feat_out[self.out_features[j]] = self.ops[j](xp.contiguous())
                 j += 1
 
@@ -780,23 +785,23 @@ class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
 
     # Copied from transformers.models.bert.modeling_bert.BertModel.forward
     def forward(
-        self,
-        input_ids=None,
-        bbox=None,
-        attention_mask=None,
-        token_type_ids=None,
-        valid_span=None,
-        position_ids=None,
-        head_mask=None,
-        inputs_embeds=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_values=None,
-        use_cache=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-        images=None,
+            self,
+            input_ids=None,
+            bbox=None,
+            attention_mask=None,
+            token_type_ids=None,
+            valid_span=None,
+            position_ids=None,
+            head_mask=None,
+            inputs_embeds=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_values=None,
+            use_cache=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
+            images=None,
     ):
         r"""
         encoder_hidden_states  (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length, hidden_size)`, `optional`):
@@ -818,17 +823,16 @@ class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
             If set to :obj:`True`, :obj:`past_key_values` key value states are returned and can be used to speed up
             decoding (see :obj:`past_key_values`).
         """
-        
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
 
-        #print("output_attention"+output_attentions.shape)
+        # print("output_attention"+output_attentions.shape)
 
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
 
-        #print("output_hidden_states"+output_hidden_states)
+        # print("output_hidden_states"+output_hidden_states)
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
