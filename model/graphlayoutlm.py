@@ -118,7 +118,24 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
         valid_span=None,
         graph_mask=None,
     ):
-        print("graphlayoutlm input_ids shape:".upper(), input_ids.shape)
+        print()
+        if input_ids is not None:
+            print("graphlayoutlm input_ids shape:".upper(), input_ids.shape)
+        if attention_mask is not None:
+            print("graphlayoutlm attention_mask shape:".upper(), attention_mask.shape)
+        if token_type_ids is not None:
+            print("graphlayoutlm token_type_ids shape:".upper(), token_type_ids.shape)
+        if head_mask is not None:
+            print("graphlayoutlm head_mask shape:".upper(), head_mask.shape)
+        if inputs_embeds is not None:
+            print("graphlayoutlm inputs_embeds shape:".upper(), inputs_embeds.shape)
+        if output_attentions is not None:
+            print("graphlayoutlm output_attentions shape:".upper(), output_attentions.shape)
+        if output_hidden_states is not None:
+            print("graphlayoutlm output_hidden_states shape:".upper(), output_hidden_states.shape)
+        if images is not None:
+            print("graphlayoutlm images shape:".upper(), images.shape)
+
         outputs = self.model_base(
             input_ids,
             bbox=bbox,
