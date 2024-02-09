@@ -44,7 +44,6 @@ class DatasetProcessor(object):
         else:
             self.img_name_to_id = None
 
-
     def init_meta(self, thing_classes):
         self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags']
         self.label_column_name = 'ner_tags'
@@ -85,11 +84,14 @@ class DatasetProcessor(object):
             for word_idx in word_ids:
                 # Special tokens have a word id that is None. We set the label to -100 so they are automatically
                 # ignored in the loss function.
-                if word_idx is None and not self.detection:  # FIXME
+                if word_idx is None:
                     # Дает ошибку при обращении к thing_classes на detection
-                    label_ids.append(-100)
-                    bbox_inputs.append([0, 0, 0, 0])
-                    new_node_ids.append(-1)
+                    # Без detection почему-то перестало обучаться
+                    # if not self.detection:  # FIXME
+                    #     label_ids.append(-100)
+                    #     bbox_inputs.append([0, 0, 0, 0])
+                    #     new_node_ids.append(-1)
+                    pass
                 # We set the label for the first token of each word.
                 elif word_idx != previous_word_idx:
                     label_ids.append(label[word_idx])
