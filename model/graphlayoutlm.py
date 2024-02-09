@@ -152,7 +152,8 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
         )
 
         print('model_base outputs[0] shape:'.upper(), outputs[0].shape)
-        print('model_base outputs[1] shape:'.upper(), outputs[1].shape)
+        if return_dict:
+            print('model_base outputs[1] shape:'.upper(), outputs[1].shape)
 
         # see LayoutLMv3Model's .forward()
         if self.model_base.detection:  # FIXME for detection to use graph_mask

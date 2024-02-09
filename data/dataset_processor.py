@@ -137,7 +137,7 @@ class DatasetProcessor(object):
             graph_mask_list.append(graph_mask)
         tokenized_inputs["graph_mask"] = graph_mask_list
 
-        if self.args.annotation_tag:
+        if self.detection:
             annotations = []
             assert len(bboxes) == len(labels)
             for i in range(len(bboxes)):
