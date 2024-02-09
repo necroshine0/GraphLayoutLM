@@ -86,12 +86,12 @@ class DatasetProcessor(object):
                 # ignored in the loss function.
                 if word_idx is None:
                     # Дает ошибку при обращении к thing_classes на detection
-                    # Без detection почему-то перестало обучаться
-                    # if not self.detection:  # FIXME
-                    #     label_ids.append(-100)
-                    #     bbox_inputs.append([0, 0, 0, 0])
-                    #     new_node_ids.append(-1)
-                    pass
+                    # Без detection почему-то перестало обучаться из-за заглушки на нулевом индексе
+                    # Возможно, эта проблема только с набором презентаций
+                    if not self.detection and self.args.dataset_name != 'sber-slides':  # FIXME
+                        label_ids.append(-100)
+                        bbox_inputs.append([0, 0, 0, 0])
+                        new_node_ids.append(-1)
                 # We set the label for the first token of each word.
                 elif word_idx != previous_word_idx:
                     label_ids.append(label[word_idx])
