@@ -59,7 +59,7 @@ class DataCollatorForKeyValueExtraction(DataCollatorMixin):
 
         images = None
         if "images" in features[0]:
-            images = torch.stack([torch.tensor(d.pop("image")) for d in features])
+            images = torch.stack([torch.tensor(d.pop("images")) for d in features])
             IMAGE_LEN = int(images.shape[-1] / 16) * int(images.shape[-1] / 16) + 1
 
         batch = self.tokenizer.pad(

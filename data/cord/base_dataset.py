@@ -45,7 +45,6 @@ class BaseDataset(datasets.GeneratorBasedBuilder):
                         }
                     ),
                     "ner_tags": datasets.Sequence(datasets.features.ClassLabel(names=self.tags_names)),
-                    "image": datasets.Array3D(shape=(3, 224, 224), dtype="uint8"),
                     "image_path": datasets.Value("string"),
                 }
             ),
