@@ -307,6 +307,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
+        remove_unused_columns=False,
     )
 
     # Training

@@ -29,7 +29,7 @@ class DatasetProcessor(object):
         self.label_to_id = None
         self.tokenizer = None
 
-        if self.args.dataset_name == 'sber-slides':
+        if self.detection and self.args.dataset_name == 'sber-slides':
             meta_file = "datasets/sber-slides/meta.json"
             if "GraphLayoutLM" not in os.getcwd():
                 meta_file = os.path.join("GraphLayoutLM", meta_file)
@@ -107,13 +107,14 @@ class DatasetProcessor(object):
             image_paths.append(ipath)
 
             img = pil_loader(ipath)
-            width, height = img.size
             if self.args.visual_embed:
                 for_patches, _ = common_transform(img, augmentation=augmentation)
                 patch = patch_transform(for_patches)
                 _, width, height = patch.shape
                 images.append(patch)
-            widths.append(width); heights.append(height)
+            if self.detection:
+                width, height = img.size
+                widths.append(width); heights.append(height)
 
             new_node_data, new_ids = set_nodes(new_node_ids)
             new_edges_data = set_edges(examples["edges"][org_batch_index], new_ids)
@@ -135,34 +136,40 @@ class DatasetProcessor(object):
                 [b_start, b_end] = nodes_data[b_node_index]
                 graph_mask[a_start:a_end + 1, b_start:b_end + 1] = 0
             graph_mask_list.append(graph_mask)
+
         tokenized_inputs["graph_mask"] = graph_mask_list
+        tokenized_inputs["image_path"] = image_paths
+        if self.args.visual_embed:
+            tokenized_inputs["image"] = images
 
         if self.detection:
-            annotations = []
-            assert len(bboxes) == len(labels)
-            for i in range(len(bboxes)):
-                assert len(bboxes[i]) == len(labels[i])
-                annotations.append(
-                    [{"bbox": bboxes[i][j], "category_id": labels[i][j], "bbox_mode": self.boxmode}
-                     for j in range(len(bboxes[i]))]
-                )
-
+            annotations = self.get_annotations(labels, bboxes)
             tokenized_inputs["annotations"] = annotations
+            tokenized_inputs["width"] = widths
+            tokenized_inputs["height"] = heights
+
             del tokenized_inputs["labels"], tokenized_inputs["bbox"]
+
+            if self.img_name_to_id is not None:
+                tokenized_inputs["image_id"] = list(map(
+                    lambda x: self.img_name_to_id[os.path.split(x)[-1]],
+                    tokenized_inputs["image_path"]
+                ))
         else:
             tokenized_inputs["labels"] = labels
             tokenized_inputs["bbox"] = bboxes
-        tokenized_inputs["image_path"] = image_paths
-        tokenized_inputs["width"] = widths
-        tokenized_inputs["height"] = heights
-        if self.args.visual_embed:
-            tokenized_inputs["image"] = images
-        if self.img_name_to_id is not None:
-            tokenized_inputs["image_id"] = list(map(
-                lambda x: self.img_name_to_id[os.path.split(x)[-1]],
-                tokenized_inputs["image_path"]
-            ))
         return tokenized_inputs
+
+    def get_annotations(self, labels, bboxes):
+        annotations = []
+        assert len(bboxes) == len(labels)
+        for i in range(len(bboxes)):
+            assert len(bboxes[i]) == len(labels[i])
+            annotations.append(
+                [{"bbox": bboxes[i][j], "category_id": labels[i][j], "bbox_mode": self.boxmode}
+                 for j in range(len(bboxes[i]))]
+            )
+        return annotations
 
     def get_transforms(self):
         imagenet_default_mean_and_std = self.args.imagenet_default_mean_and_std

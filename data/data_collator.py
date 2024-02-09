@@ -1,6 +1,6 @@
 import torch
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from transformers import BatchEncoding, PreTrainedTokenizerBase
 from transformers.data.data_collator import (
