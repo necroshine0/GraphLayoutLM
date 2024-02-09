@@ -142,13 +142,11 @@ class DetrDatasetMapper:
                 # В dataset_dict тоже меняется, ибо по ссылке
                 annots[i]['bbox'] = new_bboxes[i].tolist()
 
-
-        if "image" in dataset_dict.keys():
+        if "images" in dataset_dict.keys():
             # (C, W, H) -> (W, H, C)
-            image = np.transpose(np.array(dataset_dict["image"]), (1, 2, 0))
+            image = np.transpose(np.array(dataset_dict["images"]), (1, 2, 0))
         else:
-            img_name_key = "file_name" if "file_name" in dataset_dict.keys() else "image_path"
-            image = utils.read_image(dataset_dict[img_name_key], format=self.img_format)
+            image = utils.read_image(dataset_dict["image_path"], format=self.img_format)
         utils.check_image_size(dataset_dict, image)
 
         if self.crop_gen is None:
@@ -167,7 +165,7 @@ class DetrDatasetMapper:
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["image"] = torch.as_tensor(
+        dataset_dict["images"] = torch.as_tensor(
                 np.ascontiguousarray(image.transpose(2, 0, 1)),
                 dtype=torch.float16
             )

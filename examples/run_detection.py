@@ -57,7 +57,7 @@ def main(args):
         folder_name = f"{args.dataset_name.replace('-', '')}_{split}"
         dataset_name = f"datasets/{args.dataset_name}"
         DatasetCatalog.register(folder_name,
-                    lambda x=split: get_dataset_dict(dataset_name, x, tokenizer, args))
+                    lambda x=split: get_dataset_dict(dataset_name, x, tokenizer, args, detection=True))
         MetadataCatalog.get(folder_name).thing_classes = get_thing_classes_from_name(dataset_name)
 
     if args.eval_only:
@@ -78,7 +78,6 @@ if __name__ == "__main__":
     parser = default_argument_parser()
     parser.add_argument("--dataset_name", type=str, default="sber-slides")
     parser.add_argument("--visual_embed", type=int, default=1)
-    parser.add_argument("--annotation_tag", type=int, default=0)
     parser.add_argument("--label_all_tokens", type=bool, default=False)
     parser.add_argument("--imagenet_default_mean_and_std", type=bool, default=False)
     parser.add_argument("--input_size", type=int, default=224)

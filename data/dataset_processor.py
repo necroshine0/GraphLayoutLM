@@ -16,10 +16,11 @@ from detectron2.structures.boxes import BoxMode
 
 
 class DatasetProcessor(object):
-    def __init__(self, args_namespace, boxmode='xyxy'):
+    def __init__(self, args_namespace, boxmode='xyxy', detection=False):
         self.args = args_namespace
         # see dataset mapper, better not to use processing in dataset_processor
         self.boxmode = BoxMode(0) if boxmode == 'xyxy' else BoxMode(1)  # xyxy or xywh
+        self.detection = detection  # detection=True means to use "annotations" complex key
 
         self.column_names = None
         self.text_column_name = None
@@ -43,16 +44,19 @@ class DatasetProcessor(object):
         else:
             self.img_name_to_id = None
 
-        self.input_len = 709  # from model weights shape
 
     def init_meta(self, thing_classes):
-        self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image', 'image_path']
+        self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image']
         self.label_column_name = 'ner_tags'
         self.label_list = thing_classes
         self.text_column_name = "words" if "words" in self.column_names else "tokens"
 
     def init_tokenizer(self, tokenizer):
         self.tokenizer = tokenizer
+        # in base, input_size=224
+        self.visual_mask_len = int(self.args.input_size / 16) ** 2 + 1  # in base =197
+        self.tokens_mask_len = self.tokenizer.model_max_length  # in base =512
+        self.attention_mask_len = self.tokens_mask_len + self.visual_mask_len  # 512 + 197 = 709
 
     def tokenize_and_align_labels(self, examples, augmentation=False):
         tokenized_inputs = self.tokenizer(
@@ -81,12 +85,11 @@ class DatasetProcessor(object):
             for word_idx in word_ids:
                 # Special tokens have a word id that is None. We set the label to -100 so they are automatically
                 # ignored in the loss function.
-                if word_idx is None:  # FIXME
-                    # Дает ошибку при обращении к thing_classes
-                    # label_ids.append(-100)
-                    # bbox_inputs.append([0, 0, 0, 0])
-                    # new_node_ids.append(-1)
-                    pass
+                if word_idx is None and not self.detection:  # FIXME
+                    # Дает ошибку при обращении к thing_classes на detection
+                    label_ids.append(-100)
+                    bbox_inputs.append([0, 0, 0, 0])
+                    new_node_ids.append(-1)
                 # We set the label for the first token of each word.
                 elif word_idx != previous_word_idx:
                     label_ids.append(label[word_idx])
@@ -121,7 +124,8 @@ class DatasetProcessor(object):
         graph_mask_list = []
         for nodes_data, edges_data in zip(nodes, edges):
             edges_len = len(edges_data)
-            graph_mask = -9e15 * np.ones((self.input_len, self.input_len))
+            # NOTE: graph_mask combines both token and visual
+            graph_mask = -9e15 * np.ones((self.attention_mask_len, self.attention_mask_len))
             for edge_i in range(edges_len):
                 edge = edges_data[edge_i]
                 if edge[0] == -1:
@@ -148,15 +152,15 @@ class DatasetProcessor(object):
         else:
             tokenized_inputs["labels"] = labels
             tokenized_inputs["bbox"] = bboxes
-        tokenized_inputs["file_name"] = image_paths
+        tokenized_inputs["image_path"] = image_paths
         tokenized_inputs["width"] = widths
         tokenized_inputs["height"] = heights
         if self.args.visual_embed:
-            tokenized_inputs["image"] = images
+            tokenized_inputs["images"] = images
         if self.img_name_to_id is not None:
             tokenized_inputs["image_id"] = list(map(
                 lambda x: self.img_name_to_id[os.path.split(x)[-1]],
-                tokenized_inputs["file_name"]
+                tokenized_inputs["image_path"]
             ))
         return tokenized_inputs
 
@@ -201,7 +205,7 @@ class DatasetProcessor(object):
         return dataset
 
 
-def get_dataset_dict(dataset_folder, split, tokenizer, args):
+def get_dataset_dict(dataset_folder, split, tokenizer, args, detection=False):
     # dataset_folder = ".../datasets/dataset_name"
     dataset_name = os.path.split(dataset_folder)[-1]
     if dataset_name == "CORD":
@@ -236,12 +240,12 @@ def get_dataset_dict(dataset_folder, split, tokenizer, args):
     dataset_list = list(map(mapping, dataset_list))
 
     dataset = Dataset.from_list(dataset_list)
-    dataset = process_dataset(dataset, thing_classes, tokenizer, args)
+    dataset = process_dataset(dataset, thing_classes, tokenizer, args, detection)
     return dataset.to_list()
 
 
-def process_dataset(dataset, thing_classes, tokenizer, args):
-    builder = DatasetProcessor(args)
+def process_dataset(dataset, thing_classes, tokenizer, args, detection=False):
+    builder = DatasetProcessor(args, detection)
     builder.init_meta(thing_classes)
     builder.init_tokenizer(tokenizer)
     return builder.process_dataset(dataset)

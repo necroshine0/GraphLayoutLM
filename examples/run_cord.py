@@ -142,8 +142,7 @@ class DataTrainingArguments:
     )
 
     segment_level_layout: bool = field(default=True)
-    visual_embed: bool = field(default=True, metadata={"help": "if to use image processing in dataset_processor"})
-    annotation_tag: bool = field(default=False)
+    visual_embed: int = field(default=1, metadata={"help": "if to use image processing in dataset_processor"})
     data_dir: Optional[str] = field(default=None)
     input_size: int = field(default=224, metadata={"help": "images input size for backbone"})
     second_input_size: int = field(default=112, metadata={"help": "images input size for discrete vae"})

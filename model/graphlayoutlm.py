@@ -113,6 +113,29 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
         valid_span=None,
         graph_mask=None,
     ):
+
+        print()
+        if input_ids is not None:
+            print("graphlayoutlm input_ids shape:".upper(), input_ids.shape)
+        if attention_mask is not None:
+            print("graphlayoutlm attention_mask shape:".upper(), attention_mask.shape)
+        if token_type_ids is not None:
+            print("graphlayoutlm token_type_ids shape:".upper(), token_type_ids.shape)
+        if head_mask is not None:
+            print("graphlayoutlm head_mask shape:".upper(), head_mask.shape)
+        if inputs_embeds is not None:
+            print("graphlayoutlm inputs_embeds shape:".upper(), inputs_embeds.shape)
+        if output_attentions is not None:
+            print("graphlayoutlm output_attentions shape:".upper(), output_attentions.shape)
+        if output_hidden_states is not None:
+            print("graphlayoutlm output_hidden_states shape:".upper(), output_hidden_states.shape)
+        if images is not None:
+            print("graphlayoutlm images shape:".upper(), images.shape)
+        if valid_span is not None:
+            print("graphlayoutlm valid_span shape:".upper(), valid_span.shape)
+        if graph_mask is not None:
+            print("graphlayoutlm graph_mask shape:".upper(), graph_mask.shape)
+
         outputs = self.model_base(
             input_ids,
             bbox=bbox,
@@ -128,8 +151,11 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             valid_span=valid_span,
         )
 
+        print('model_base outputs[0] shape:'.upper(), outputs[0].shape)
+        print('model_base outputs[1] shape:'.upper(), outputs[1].shape)
+
         # see LayoutLMv3Model's .forward()
-        if self.model_base.detection:
+        if self.model_base.detection:  # FIXME for detection to use graph_mask
             return outputs
 
         sequence_output = self.sublayer(outputs[0], graph_mask, self.graph_attention_layer)
