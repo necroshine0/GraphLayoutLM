@@ -135,6 +135,10 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             print("graphlayoutlm output_hidden_states shape:".upper(), output_hidden_states.shape)
         if images is not None:
             print("graphlayoutlm images shape:".upper(), images.shape)
+        if valid_span is not None:
+            print("graphlayoutlm valid_span shape:".upper(), valid_span.shape)
+        if graph_mask is not None:
+            print("graphlayoutlm graph_mask shape:".upper(), graph_mask.shape)
 
         outputs = self.model_base(
             input_ids,
@@ -147,7 +151,7 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            images=images,
+            images=images.to(torch.float),
             valid_span=valid_span,
         )
 
@@ -158,7 +162,6 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
         print("model_base outputs[0] shape:".upper(), outputs[0].shape)
         assert outputs[0].shape == torch.Size([2, 709, 768])
 
-        print("graph_mask shape:".upper(), graph_mask.shape)
         sequence_output = self.sublayer(outputs[0], graph_mask, self.graph_attention_layer)
 
         if not return_dict:

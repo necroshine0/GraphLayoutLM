@@ -9,8 +9,6 @@ from typing import Optional
 from argparse import Namespace
 from dataclasses import dataclass, field
 
-import numpy as np
-from datasets import ClassLabel, load_dataset, load_metric
 
 import transformers
 from transformers import (

@@ -43,16 +43,20 @@ class DatasetProcessor(object):
         else:
             self.img_name_to_id = None
 
-        self.input_len = 300  # from model weights shape, 709
+        # in base, input_size=224
+        self.visual_mask_len = int(self.args.input_size / 16) ** 2 + 1  # 197
+
 
     def init_meta(self, thing_classes):
-        self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image', 'image_path']
+        self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image']
         self.label_column_name = 'ner_tags'
         self.label_list = thing_classes
         self.text_column_name = "words" if "words" in self.column_names else "tokens"
 
     def init_tokenizer(self, tokenizer):
         self.tokenizer = tokenizer
+        self.tokens_mask_len = self.tokenizer.model_max_length  # tokenizer's max len, in base =512
+        self.attention_mask_len = self.tokens_mask_len + self.visual_mask_len  # 512 + 197 = 709
 
     def tokenize_and_align_labels(self, examples, augmentation=False):
         tokenized_inputs = self.tokenizer(
@@ -121,7 +125,8 @@ class DatasetProcessor(object):
         graph_mask_list = []
         for nodes_data, edges_data in zip(nodes, edges):
             edges_len = len(edges_data)
-            graph_mask = -9e15 * np.ones((self.input_len, self.input_len))
+            # NOTE: graph_mask combines both token and visual
+            graph_mask = -9e15 * np.ones((self.attention_mask_len, self.attention_mask_len))
             for edge_i in range(edges_len):
                 edge = edges_data[edge_i]
                 if edge[0] == -1:
@@ -148,15 +153,15 @@ class DatasetProcessor(object):
         else:
             tokenized_inputs["labels"] = labels
             tokenized_inputs["bbox"] = bboxes
-        tokenized_inputs["file_name"] = image_paths
+        tokenized_inputs["image_path"] = image_paths
         tokenized_inputs["width"] = widths
         tokenized_inputs["height"] = heights
         if self.args.visual_embed:
-            tokenized_inputs["image"] = images
+            tokenized_inputs["images"] = images
         if self.img_name_to_id is not None:
             tokenized_inputs["image_id"] = list(map(
                 lambda x: self.img_name_to_id[os.path.split(x)[-1]],
-                tokenized_inputs["file_name"]
+                tokenized_inputs["image_path"]
             ))
         return tokenized_inputs
 
