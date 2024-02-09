@@ -46,7 +46,7 @@ class DatasetProcessor(object):
 
 
     def init_meta(self, thing_classes):
-        self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags', 'image']
+        self.column_names = ['id', 'words', 'bboxes', 'node_ids', 'edges', 'ner_tags']
         self.label_column_name = 'ner_tags'
         self.label_list = thing_classes
         self.text_column_name = "words" if "words" in self.column_names else "tokens"
@@ -156,7 +156,7 @@ class DatasetProcessor(object):
         tokenized_inputs["width"] = widths
         tokenized_inputs["height"] = heights
         if self.args.visual_embed:
-            tokenized_inputs["images"] = images
+            tokenized_inputs["image"] = images
         if self.img_name_to_id is not None:
             tokenized_inputs["image_id"] = list(map(
                 lambda x: self.img_name_to_id[os.path.split(x)[-1]],
