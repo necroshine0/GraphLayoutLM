@@ -73,7 +73,7 @@ class CordDataset(BaseDataset):
             data = json.load(f)
         image_path = os.path.join(img_dir, file)
         image_path = image_path.replace("json", "png")
-        image, size = load_image(image_path)
+        _, size = load_image(image_path)
         for item in data["valid_line"]:
             cur_line_bboxes = []
             line_words, label = item["words"], item["category"]
@@ -107,6 +107,5 @@ class CordDataset(BaseDataset):
             "ner_tags": ner_tags,
             "node_ids": node_ids,
             "edges": edges,
-            "image": image,
             "image_path": image_path
         }

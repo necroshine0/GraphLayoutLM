@@ -140,7 +140,7 @@ class DatasetProcessor(object):
         tokenized_inputs["graph_mask"] = graph_mask_list
         tokenized_inputs["image_path"] = image_paths
         if self.args.visual_embed:
-            tokenized_inputs["image"] = images
+            tokenized_inputs["images"] = images
 
         if self.detection:
             annotations = self.get_annotations(labels, bboxes)

@@ -299,6 +299,7 @@ def main():
             }
 
     # Initialize our Trainer
+    # training_args.remove_unused_columns = False
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -307,7 +308,6 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
-        remove_unused_columns=False,
     )
 
     # Training
