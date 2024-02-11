@@ -142,11 +142,11 @@ class DetrDatasetMapper:
                 # В dataset_dict тоже меняется, ибо по ссылке
                 annots[i]['bbox'] = new_bboxes[i].tolist()
 
-        if "images" in dataset_dict.keys():
+        if "image" in dataset_dict.keys():
             # (C, W, H) -> (W, H, C)
-            image = np.transpose(np.array(dataset_dict["images"]), (1, 2, 0))
+            image = np.transpose(np.array(dataset_dict["image"]), (1, 2, 0))
         else:
-            image = utils.read_image(dataset_dict["image_path"], format=self.img_format)
+            image = utils.read_image(dataset_dict["file_name"], format=self.img_format)
         utils.check_image_size(dataset_dict, image)
 
         if self.crop_gen is None:
@@ -165,7 +165,7 @@ class DetrDatasetMapper:
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["images"] = torch.as_tensor(
+        dataset_dict["image"] = torch.as_tensor(
                 np.ascontiguousarray(image.transpose(2, 0, 1)),
                 dtype=torch.float16
             )
@@ -177,7 +177,7 @@ class DetrDatasetMapper:
 
         if "annotations" in dataset_dict.keys():
             # USER: Modify this if you want to keep them for some reason.
-            for anno in dataset_dict["annotations"]: # str
+            for anno in dataset_dict["annotations"]:
                 if not self.mask_on:
                     anno.pop("segmentation", None)
                 anno.pop("keypoints", None)
@@ -189,4 +189,6 @@ class DetrDatasetMapper:
             ]
             instances = utils.annotations_to_instances(annos, image_shape)
             dataset_dict["instances"] = utils.filter_empty_instances(instances)
+
+        # dict_keys(['file_name', 'attention_mask', 'graph_mask', 'width', 'height', 'image_id', 'image', 'instances'])
         return dataset_dict

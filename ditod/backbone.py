@@ -98,7 +98,7 @@ class VIT_Backbone(Backbone):
             return self.backbone.forward(
                 input_ids=x["input_ids"] if "input_ids" in x else None,
                 bbox=x["bbox"] if "bbox" in x else None,
-                images=x["images"] if "images" in x else None,
+                image=x["image"] if "image" in x else None,
                 attention_mask=x["attention_mask"] if "attention_mask" in x else None,
                 # output_hidden_states=True,
             )

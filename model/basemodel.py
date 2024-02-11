@@ -1,6 +1,5 @@
 """The base Model LayoutLMv3. """
 import math
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -796,7 +795,7 @@ class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
-        images=None,
+        image=None,
     ):
         r"""
         encoder_hidden_states  (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length, hidden_size)`, `optional`):
@@ -818,7 +817,7 @@ class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
             If set to :obj:`True`, :obj:`past_key_values` key value states are returned and can be used to speed up
             decoding (see :obj:`past_key_values`).
         """
-        
+
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
 
@@ -844,11 +843,11 @@ class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
             input_shape = inputs_embeds.size()[:-1]
             batch_size, seq_length = input_shape
             device = inputs_embeds.device
-        elif images is not None:
-            batch_size = len(images)
-            device = images.device
+        elif image is not None:
+            batch_size = len(image)
+            device = image.device
         else:
-            raise ValueError("You have to specify either input_ids or inputs_embeds or images")
+            raise ValueError("You have to specify either input_ids or inputs_embeds or image")
 
         if not self.image_only:
             # past_key_values_length
@@ -887,10 +886,10 @@ class LayoutLMv3Model(LayoutLMv3PreTrainedModel):
 
         final_bbox = final_position_ids = None
         Hp = Wp = None
-        if images is not None:
+        if image is not None:
             patch_size = 16
-            Hp, Wp = int(images.shape[2] / patch_size), int(images.shape[3] / patch_size)
-            visual_emb = self.forward_image(images)
+            Hp, Wp = int(image.shape[2] / patch_size), int(image.shape[3] / patch_size)
+            visual_emb = self.forward_image(image)
             if self.detection:
                 visual_attention_mask = torch.ones((batch_size, visual_emb.shape[1]), dtype=torch.long, device=device)
                 if self.image_only:

@@ -129,7 +129,7 @@ class VLGeneralizedRCNN(GeneralizedRCNN):
 
     def get_batch(self, examples, images):
         if len(examples) >= 1:  # image_only | old: and "bbox" not in examples[0]
-            return {"images": images.tensor}
+            return {"image": images.tensor}
 
         return input
 

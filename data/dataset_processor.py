@@ -16,7 +16,7 @@ from detectron2.structures.boxes import BoxMode
 
 
 class DatasetProcessor(object):
-    def __init__(self, args_namespace, boxmode='xyxy', detection=False):
+    def __init__(self, args_namespace, detection=False, boxmode='xyxy'):
         self.args = args_namespace
         # see dataset mapper, better not to use processing in dataset_processor
         self.boxmode = BoxMode(0) if boxmode == 'xyxy' else BoxMode(1)  # xyxy or xywh
@@ -69,7 +69,7 @@ class DatasetProcessor(object):
             common_transform, patch_transform = self.get_transforms()
 
         labels, bboxes, nodes, edges = [], [], [], []
-        images, image_paths, widths, heights = [], [], [], []
+        images, file_names, widths, heights = [], [], [], []
         for batch_index in range(len(tokenized_inputs["input_ids"])):
             word_ids = tokenized_inputs.word_ids(batch_index=batch_index)
             org_batch_index = tokenized_inputs["overflow_to_sample_mapping"][batch_index]
@@ -77,7 +77,7 @@ class DatasetProcessor(object):
             label = examples[self.label_column_name][org_batch_index]
             bbox = examples["bboxes"][org_batch_index]
             node_ids = examples["node_ids"][org_batch_index]
-            ipath = examples["image_path"][org_batch_index]
+            ipath = examples["file_name"][org_batch_index]
 
             previous_word_idx = None
             label_ids, bbox_inputs, new_node_ids = [], [], []
@@ -106,16 +106,16 @@ class DatasetProcessor(object):
                 previous_word_idx = word_idx
             labels.append(label_ids)
             bboxes.append(bbox_inputs)
-            image_paths.append(ipath)
+            file_names.append(ipath)
 
             img = pil_loader(ipath)
+            width, height = img.size
             if self.args.visual_embed:
                 for_patches, _ = common_transform(img, augmentation=augmentation)
                 patch = patch_transform(for_patches)
-                _, width, height = patch.shape
+                _, width, height = patch.shape  # (w, h) -> (args.input_size, args.input_size)
                 images.append(patch)
             if self.detection:
-                width, height = img.size
                 widths.append(width); heights.append(height)
 
             new_node_data, new_ids = set_nodes(new_node_ids)
@@ -139,25 +139,30 @@ class DatasetProcessor(object):
                 graph_mask[a_start:a_end + 1, b_start:b_end + 1] = 0
             graph_mask_list.append(graph_mask)
 
+        del tokenized_inputs["overflow_to_sample_mapping"]
         tokenized_inputs["graph_mask"] = graph_mask_list
-        tokenized_inputs["image_path"] = image_paths
+        tokenized_inputs["file_name"] = file_names
         if self.args.visual_embed:
-            tokenized_inputs["images"] = images
+            tokenized_inputs["image"] = images
 
         if self.detection:
+            # keys: 'file_name', 'attention_mask', 'graph_mask', 'annotations'
+            del tokenized_inputs["input_ids"]  #, tokenized_inputs["attention_mask"]
+            del tokenized_inputs["labels"], tokenized_inputs["bbox"]
+
             annotations = self.get_annotations(labels, bboxes)
             tokenized_inputs["annotations"] = annotations
             tokenized_inputs["width"] = widths
             tokenized_inputs["height"] = heights
 
-            del tokenized_inputs["labels"], tokenized_inputs["bbox"]
-
             if self.img_name_to_id is not None:
                 tokenized_inputs["image_id"] = list(map(
                     lambda x: self.img_name_to_id[os.path.split(x)[-1]],
-                    tokenized_inputs["image_path"]
+                    tokenized_inputs["file_name"]
                 ))
         else:
+            # keys: 'input_ids', 'attention_mask','graph_mask', 'bbox', 'labels'
+            del tokenized_inputs["file_name"]
             tokenized_inputs["labels"] = labels
             tokenized_inputs["bbox"] = bboxes
         return tokenized_inputs

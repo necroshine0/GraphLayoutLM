@@ -53,19 +53,19 @@ class GraphAttentionLayer(nn.Module):
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
-    
+
     def forward(
-        self,
-        seq_inputs,
-        graph_mask,
+            self,
+            seq_inputs,
+            graph_mask,
     ):
         mixed_query_layer = self.query(seq_inputs)
         key_layer = self.transpose_for_scores(self.key(seq_inputs))
         value_layer = self.transpose_for_scores(self.value(seq_inputs))
         query_layer = self.transpose_for_scores(mixed_query_layer)
 
-        attention_scores = torch.matmul(query_layer , key_layer.transpose(-1, -2))/ math.sqrt(self.attention_head_size)
-        attention_scores = attention_scores+graph_mask.unsqueeze(1).repeat(1,self.num_attention_heads,1,1)
+        attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2)) / math.sqrt(self.attention_head_size)
+        attention_scores = attention_scores + graph_mask.unsqueeze(1).repeat(1, self.num_attention_heads, 1, 1)
         attention_probs = nn.Softmax(dim=-1)(attention_scores)
         attention_probs = self.dropout(attention_probs)
 
@@ -80,14 +80,14 @@ class GraphAttentionLayer(nn.Module):
 
 class SubLayerConnection(nn.Module):
     def __init__(self, config):
-        super(SubLayerConnection,self).__init__()
+        super(SubLayerConnection, self).__init__()
         self.norm = nn.LayerNorm(config.hidden_size, eps=1e-05)
         self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
         self.size = config.hidden_size
 
     def forward(self, x, graph_mask, sublayer):
         return x + self.dropout(sublayer(self.norm(x), graph_mask))
-    
+
 
 class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
     def __init__(self, config, detection=False, out_features=None, image_only=False):
@@ -98,20 +98,20 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
         self.init_weights()
 
     def forward(
-        self,
-        input_ids=None,
-        bbox=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        head_mask=None,
-        inputs_embeds=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-        images=None,
-        valid_span=None,
-        graph_mask=None,
+            self,
+            input_ids=None,
+            bbox=None,
+            attention_mask=None,
+            token_type_ids=None,
+            position_ids=None,
+            head_mask=None,
+            inputs_embeds=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
+            image=None,
+            valid_span=None,
+            graph_mask=None,
     ):
 
         # print()
@@ -129,8 +129,8 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
         #     print("graphlayoutlm output_attentions shape:".upper(), output_attentions.shape)
         # if output_hidden_states is not None:
         #     print("graphlayoutlm output_hidden_states shape:".upper(), output_hidden_states.shape)
-        # if images is not None:
-        #     print("graphlayoutlm images shape:".upper(), images.shape)
+        # if image is not None:
+        #     print("graphlayoutlm image shape:".upper(), image.shape)
         # if valid_span is not None:
         #     print("graphlayoutlm valid_span shape:".upper(), valid_span.shape)
         # if graph_mask is not None:
@@ -147,13 +147,18 @@ class GraphLayoutLM(GraphLayoutLMPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            images=images,
+            image=image,
             valid_span=valid_span,
         )
 
-        # print('model_base outputs[0] shape:'.upper(), outputs[0].shape)
-        # if not return_dict:
-        #     print('model_base outputs[1] shape:'.upper(), outputs[1].shape)
+        # if self.detection:
+        #     print('model_base outputs:'.upper(), outputs.keys())
+        #     for key in outputs:
+        #         print(f'KEY: {key}, SHAPE: {outputs[key].shape}')
+        # else:
+        #     print('model_base outputs[0] shape:'.upper(), outputs[0].shape)
+        #     if not return_dict:
+        #         print('model_base outputs[1] shape:'.upper(), outputs[1].shape)
 
         # see LayoutLMv3Model's .forward()
         if self.model_base.detection:  # FIXME for detection to use graph_mask
@@ -184,7 +189,7 @@ class GraphLayoutLMClassificationHead(nn.Module):
         super().__init__()
         self.pool_feature = pool_feature
         if pool_feature:
-            self.dense = nn.Linear(config.hidden_size*3, config.hidden_size)
+            self.dense = nn.Linear(config.hidden_size * 3, config.hidden_size)
         else:
             self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         classifier_dropout = (
@@ -219,23 +224,22 @@ class GraphLayoutLMForTokenClassification(GraphLayoutLMPreTrainedModel):
 
         self.init_weights()
 
-
     def forward(
-        self,
-        input_ids=None,
-        bbox=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        valid_span=None,
-        head_mask=None,
-        inputs_embeds=None,
-        labels=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-        images=None,
-        graph_mask=None,
+            self,
+            input_ids=None,
+            bbox=None,
+            attention_mask=None,
+            token_type_ids=None,
+            position_ids=None,
+            valid_span=None,
+            head_mask=None,
+            inputs_embeds=None,
+            labels=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
+            image=None,
+            graph_mask=None,
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
@@ -255,7 +259,7 @@ class GraphLayoutLMForTokenClassification(GraphLayoutLMPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            images=images,
+            image=image,
             valid_span=valid_span,
             graph_mask=graph_mask,
         )
@@ -306,22 +310,22 @@ class GraphLayoutLMForQuestionAnswering(GraphLayoutLMPreTrainedModel):
         self.init_weights()
 
     def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        valid_span=None,
-        head_mask=None,
-        inputs_embeds=None,
-        start_positions=None,
-        end_positions=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-        bbox=None,
-        images=None,
-        graph_mask=None,
+            self,
+            input_ids=None,
+            attention_mask=None,
+            token_type_ids=None,
+            position_ids=None,
+            valid_span=None,
+            head_mask=None,
+            inputs_embeds=None,
+            start_positions=None,
+            end_positions=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
+            bbox=None,
+            image=None,
+            graph_mask=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`):
@@ -346,7 +350,7 @@ class GraphLayoutLMForQuestionAnswering(GraphLayoutLMPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             bbox=bbox,
-            images=images,
+            image=image,
             valid_span=valid_span,
             graph_mask=graph_mask,
         )
@@ -401,21 +405,21 @@ class GraphLayoutLMForSequenceClassification(GraphLayoutLMPreTrainedModel):
         self.init_weights()
 
     def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        valid_span=None,
-        head_mask=None,
-        inputs_embeds=None,
-        labels=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-        bbox=None,
-        images=None,
-        graph_mask=None,
+            self,
+            input_ids=None,
+            attention_mask=None,
+            token_type_ids=None,
+            position_ids=None,
+            valid_span=None,
+            head_mask=None,
+            inputs_embeds=None,
+            labels=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
+            bbox=None,
+            image=None,
+            graph_mask=None,
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`):
@@ -436,7 +440,7 @@ class GraphLayoutLMForSequenceClassification(GraphLayoutLMPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             bbox=bbox,
-            images=images,
+            image=image,
             valid_span=valid_span,
             graph_mask=graph_mask,
         )
